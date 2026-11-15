@@ -37,11 +37,13 @@
 
 ## 快速开始
 
+仓库地址：**https://github.com/songyuhao0724/-AI-**
+
 前置：已安装 DeepSeek Harness（桌面版或 Web 版）、Node ≥ 22.13、pnpm 11。
 
 ```pwsh
-git clone https://github.com/<you>/dsh-learning.git
-cd dsh-learning
+git clone https://github.com/songyuhao0724/-AI-.git
+cd -AI-
 pnpm install
 pnpm build
 ```
@@ -105,7 +107,9 @@ dsh-learning/
 ├── docs/
 │   ├── architecture.md   # 架构、数据流、验收标准
 │   ├── integration.md    # 安装、配置、验证、故障排查
-│   └── spec/             # 实现规格（DSH 插件 API、Zotero schema、CARSI 资源）
+│   ├── review-v0.1.0.md     # 发布前的可证伪评审清单（给异构模型用）
+│   ├── review-report-v0.1.0.md  # 评审报告：34 项断言逐条判定 + 1 个真 bug 的复现与修复
+│   └── review-evidence.md   # 演示证据的原样输出（离线 / 联网 / 中文 PDF）
 ├── COMPLIANCE.md         # 合规边界：我们做什么、不做什么
 └── LICENSE               # Apache-2.0
 ```
@@ -121,9 +125,9 @@ dsh-learning/
 | **M3** | carsi-router：资源画像 + 可得性路由 + 检索式生成 | ✅ |
 | **M4** | career：RIASEC + 12 岗位 + JD 解析 + 技能差距 + 四年路线 | ✅ |
 | **M5** | paper-radar（AIHOT `json_list`）+ bio-data + 14 个工具装进 DSH | ✅ |
-| **M6** | 文档、演示、v0.1.0 发版 | 🚧 |
+| **M6** | 文档、演示、v0.1.0 发版 | ✅ |
 
-`pnpm check` = 预设校验 + 全量构建 + 类型检查 + **153 个测试**。
+`pnpm check` = 预设校验 + 全量构建 + 类型检查 + **154 个测试**。
 
 ---
 
