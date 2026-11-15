@@ -10,6 +10,7 @@ import { existsSync, statSync } from 'node:fs';
 import { extname } from 'node:path';
 import { extractPdfPages, looksScanned, type PdfExtractOptions, type PdfPage } from './pdf.js';
 import { attachFiles, listItems, openZoteroDb, type ZoteroItem } from './zotero.js';
+import { readZoteroCache } from './zotero-cache.js';
 import type { ChunkInput, ScholarStore } from './store.js';
 
 export type SkipReason = 'no-pdf' | 'no-text' | 'error';
@@ -62,6 +63,18 @@ export function documentMeta(item: ZoteroItem): Record<string, unknown> {
     zoteroKey: item.key,
     source: 'zotero',
   };
+}
+
+/** 在条目附件里找第一份可用的 Zotero 全文缓存（`.zotero-ft-cache`）。 */
+export function findZoteroCache(
+  item: ZoteroItem,
+  dataDir: string,
+): { pages: PdfPage[]; attachmentKey: string } | null {
+  for (const attachment of item.attachments) {
+    const cached = readZoteroCache(dataDir, attachment.key);
+    if (cached) return cached;
+  }
+  return null;
 }
 
 /** 挑出这篇文献里第一个可用的本地 PDF 附件。 */
@@ -129,39 +142,50 @@ export async function importZoteroLibrary(options: ImportOptions): Promise<Impor
       };
 
       const pdf = pickPdf(item);
-      if (!pdf) {
+      const cached = findZoteroCache(item, dataDir);
+      if (!pdf && !cached) {
         result.skipped.push({ key: item.key, title, reason: 'no-pdf' });
         report('no-pdf');
         continue;
       }
 
-      try {
-        const pages = await extractPdfPages(pdf.filePath, extract);
-        if (pages.length === 0 || looksScanned(pages)) {
-          result.skipped.push({
-            key: item.key,
-            title,
-            reason: 'no-text',
-            detail: '扫描件或文字层缺失，v1 不做 OCR',
-          });
-          report('no-text');
-          continue;
+      // 先用 PDF 抽（信息最全），抽不出来再退到 Zotero 的全文缓存。
+      let pages: PdfPage[] = [];
+      let indexedFrom: 'pdf' | 'zotero-cache' = 'pdf';
+      let failure: string | null = null;
+      if (pdf) {
+        try {
+          pages = await extractPdfPages(pdf.filePath, extract);
+        } catch (error) {
+          failure = error instanceof Error ? error.message : String(error);
         }
-        const chunks = pagesToChunks(item.key, pages, documentMeta(item));
-        store.removeDocument(item.key);
-        store.upsertChunks(chunks);
-        result.documents += 1;
-        result.pages += chunks.length;
-        report('indexed');
-      } catch (error) {
+      }
+      if ((pages.length === 0 || looksScanned(pages)) && cached) {
+        pages = cached.pages;
+        indexedFrom = 'zotero-cache';
+        failure = null;
+      }
+
+      if (pages.length === 0) {
         result.skipped.push({
           key: item.key,
           title,
-          reason: 'error',
-          detail: error instanceof Error ? error.message : String(error),
+          reason: failure ? 'error' : 'no-text',
+          detail: failure ?? '扫描件或文字层缺失，v1 不做 OCR',
         });
-        report('error');
+        report(failure ? 'error' : 'no-text');
+        continue;
       }
+
+      const chunks = pagesToChunks(item.key, pages, {
+        ...documentMeta(item),
+        indexedFrom,
+      });
+      store.removeDocument(item.key);
+      store.upsertChunks(chunks);
+      result.documents += 1;
+      result.pages += chunks.length;
+      report('indexed');
     }
   } finally {
     handle.close();

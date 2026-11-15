@@ -1,0 +1,26 @@
+{
+  "name": "@dsh-learning/carsi-router",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "CARSI 资源画像 + 论文可得性路由 + 检索式生成：告诉你去哪儿拿全文、怎么写检索式",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  }
+}

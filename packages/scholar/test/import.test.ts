@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -151,6 +151,40 @@ describe('辅助函数', () => {
     handle.close();
     const first = items.find((i) => i.key === 'AAAA1111')!;
     expect(pickPdf(first)?.filePath).toBe(fixture.paperPath);
+  });
+});
+
+describe('Zotero 全文缓存兜底', () => {
+  it('PDF 损坏时退回缓存，仍能按页入库', async () => {
+    writeFileSync(fixture.paperPath, Buffer.from('broken pdf'));
+    mkdirSync(join(fixture.dataDir, 'storage', 'ATTACH01'), { recursive: true });
+    writeFileSync(
+      join(fixture.dataDir, 'storage', 'ATTACH01', '.zotero-ft-cache'),
+      'cached page one about stroke\fcached page two',
+    );
+    const result = await importZoteroLibrary({
+      dbPath: fixture.dbPath,
+      dataDir: fixture.dataDir,
+      store,
+    });
+    expect(result.documents).toBe(1);
+    expect(result.pages).toBe(2);
+    const hits = store.search('cached');
+    expect(hits[0]?.meta.indexedFrom).toBe('zotero-cache');
+  });
+
+  it('没有 PDF 但有缓存也能入库（Zotero 已抽过文的条目）', async () => {
+    const storageDir = join(fixture.dataDir, 'storage', 'ATTACH03');
+    mkdirSync(storageDir, { recursive: true });
+    writeFileSync(join(storageDir, '.zotero-ft-cache'), '康复工程 导论 第一章 绪论');
+    const result = await importZoteroLibrary({
+      dbPath: fixture.dbPath,
+      dataDir: fixture.dataDir,
+      store,
+    });
+    expect(result.documents).toBe(2); // 论文（PDF）+ 书（仅缓存）
+    const hits = store.search('绪论');
+    expect(hits[0]?.docKey).toBe('BBBB2222');
   });
 });
 

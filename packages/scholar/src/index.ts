@@ -41,6 +41,7 @@ export {
   indexPdfFile,
   documentMeta,
   pickPdf,
+  findZoteroCache,
   pagesToChunks,
   type ImportOptions,
   type ImportProgress,
@@ -48,3 +49,4 @@ export {
   type SkipReason,
   type SkippedItem,
 } from './import.js';
+export { readZoteroCache, zoteroCachePath, type ZoteroCacheResult } from './zotero-cache.js';
