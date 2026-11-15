@@ -13,3 +13,18 @@ export {
   type SearchOptions,
   type StoreStats,
 } from './store.js';
+export {
+  openZoteroDb,
+  listItems,
+  getItem,
+  listAttachments,
+  attachFiles,
+  resolveAttachmentPath,
+  summarize,
+  type OpenOptions,
+  type ZoteroAttachment,
+  type ZoteroCreator,
+  type ZoteroHandle,
+  type ZoteroItem,
+  type ZoteroLibrarySummary,
+} from './zotero.js';
