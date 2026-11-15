@@ -29,5 +29,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile=false
       - run: pnpm validate:preset
+      # 包之间有 workspace 依赖，先 build 出 .d.ts 才能 typecheck 依赖方
+      - run: pnpm build
       - run: pnpm typecheck
       - run: pnpm test

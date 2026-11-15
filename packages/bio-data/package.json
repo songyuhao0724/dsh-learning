@@ -1,0 +1,26 @@
+{
+  "name": "@dsh-learning/bio-data",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "科研数据检索：NCBI GEO / SRA 公共数据集检索与元数据解析，CNGBdb 等国内平台的门户深链",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  }
+}

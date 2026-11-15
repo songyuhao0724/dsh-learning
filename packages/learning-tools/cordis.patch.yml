@@ -1,0 +1,6 @@
+# 把「DSH 学习助手工具集」挂进 profile。
+# 这四组工具默认对 profile 内所有预设可见；只想给「知航」用，
+# 就把下面这一行搬进 preset-zhihang 的 config.plugins（见 docs/integration.md）。
+- insert:
+    - id: learning-tools
+      name: '@dsh-learning/learning-tools'

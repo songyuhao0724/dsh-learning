@@ -1,0 +1,29 @@
+{
+  "name": "@dsh-learning/paper-radar",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "热点论文雷达：从 arXiv / bioRxiv / medRxiv / PubMed 抓近期论文，按主题打标，导出成 AIHOT json_list 契约的 JSON 信源",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "dsh-radar": "./dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  }
+}

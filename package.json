@@ -13,7 +13,7 @@
                     "typecheck":  "pnpm -r --if-present typecheck",
                     "test":  "pnpm -r --if-present test",
                     "validate:preset":  "node scripts/validate-preset.mjs",
-                    "check":  "pnpm validate:preset \u0026\u0026 pnpm typecheck \u0026\u0026 pnpm test"
+                    "check":  "pnpm validate:preset \u0026\u0026 pnpm build \u0026\u0026 pnpm typecheck \u0026\u0026 pnpm test"
                 },
     "devDependencies":  {
                             "@types/node":  "^22.10.2",
