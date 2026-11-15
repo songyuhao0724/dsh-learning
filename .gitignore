@@ -1,0 +1,34 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# build output
+dist/
+*.tsbuildinfo
+
+# test / coverage
+coverage/
+.nyc_output/
+
+# local research & scratch (never committed)
+.research/
+zotero-copy/
+*.local.json
+
+# secrets & personal data
+.env
+.env.*
+!.env.example
+学习档案/
+个人档案.md
+
+# logs & OS noise
+*.log
+npm-debug.log*
+pnpm-debug.log*
+.DS_Store
+Thumbs.db
+
+# editor
+.vscode/
+.idea/

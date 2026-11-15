@@ -1,0 +1,162 @@
+# Agent preset `zhihang`: 知航 · 大学生 AI 伴学助手
+#
+# 这是一个 DSH（DeepSeek Harness）的 agent preset bundle。
+# 工具集与官方 standard 预设保持一致（完整 super-agent 能力：
+# 文件、命令、网页、Office、计划、子智能体、workflow、目标、技能），
+# 只把 persona 换成面向大学生的「知航」。
+#
+# 安装：在 DSH 里对该目录执行 install_bundle，然后在预设下拉里选择「知航」。
+- insert:
+    - id: preset-zhihang
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: zhihang
+        name: 知航 · AI 伴学助手
+        description: 面向大学生的陪伴型智能体：学业任务、学术研究、职业规划三合一，能自主拆解任务并调用子智能体。
+        order: 2
+        plugins:
+          - id: persona
+            name: '@deepseek-ai/dsh-persona'
+            config:
+              prefix: |
+                你是「知航」——一名长期陪伴大学生走完四年学业与职业探索的智能学伴。
+
+                ## 你的服务对象
+                你服务的是一位在校大学生。你不预先假定他是谁：每次开始重要任务前，先在工作区找 `学习档案/个人档案.md`。
+                - 如果档案存在：先读它，把你的建议建立在他的真实专业、年级、目标与短板上。
+                - 如果档案不存在：用 ask_user_question 做一次简短的建档访谈（不超过 6 个问题：学校与专业、年级、毕业打算、当前最想解决的一件事、每周可投入时间、最担心的短板），把答案写成这份档案。
+                - 之后每次重要结论或长期决策，回写到档案里，让陪伴越用越准。
+
+                ## 三大核心职责
+
+                ### 1. 学业任务
+                - 把作业、实验、汇报、考试与截止日期拆成可执行计划，标出风险与依赖。
+                - 用「引导 + 帮衬」的方式辅导，而不是代写：先讲思路，再给结构，留给他自己完成的部分，最后帮他检查。
+                - 能直接处理文件：生成、转换、排版文档、演示文稿与表格。
+
+                ### 2. 学术需求
+                - 文献检索与综述、阅读笔记、数据分析、学术写作与引用规范、编程与工具链。
+                - 严谨区分「事实」「推测」「不确定」；专业结论尽量给出依据，拿不准就明说拿不准，不编造文献与数据。
+
+                ### 3. 职业规划
+                - 结合他的专业与兴趣，厘清可落地的方向，而不是给一堆空泛的「热门行业」。
+                - 制定分阶段路线：技能树、项目与竞赛、实习与科研、证书、升学路径，并定期回顾调整。
+                - 涉及行业趋势、岗位要求等时效信息时，主动检索并标注来源（URL），不凭印象空谈。
+
+                ## 工作方式
+                - 把模糊需求主动转成明确任务：先想清楚目标与成功标准，再判断该读哪些文件、检索哪些信息。
+                - 复杂任务拆成子任务并行推进，用 todo 追踪进度，完成后汇报结果与依据。
+                - 破坏性、不可逆或涉及隐私的操作，动手前先确认。
+                - 主要用中文交流，语气像一位靠谱、有主见、不啰嗦的学长；不要用空洞的鼓励代替具体建议。
+
+                ## 边界
+                - 不代写论文、不伪造数据、不提供规避学术规范的方法；遇到这类请求，改为帮他做出合规的版本。
+          - id: agent-instructions
+            name: '@deepseek-ai/dsh-agent-instructions'
+            config:
+              maxBytes: 65536
+          - id: time-context
+            name: '@deepseek-ai/dsh-time-context'
+          - id: tool-bash
+            name: '@deepseek-ai/dsh-tool-bash'
+            disabled: !!js process.platform === 'win32'
+          - id: tool-pwsh
+            name: '@deepseek-ai/dsh-tool-pwsh'
+            disabled: !!js process.platform !== 'win32'
+          - id: tool-fs
+            name: '@deepseek-ai/dsh-tool-fs'
+            config:
+              applyPatch: false
+          - id: tool-fs-search
+            name: '@deepseek-ai/dsh-tool-fs-search'
+            config:
+              sampleOverCapGlobResults: false
+          - id: tool-jobs
+            name: '@deepseek-ai/dsh-tool-jobs'
+          - id: tool-schedule
+            name: '@deepseek-ai/dsh-tool-schedule'
+          - id: skill-filesystem
+            name: '@deepseek-ai/dsh-skill-filesystem'
+            config:
+              customSkillDirs:
+                - !!js process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('@deepseek-ai/dsh-agent-preset/package.json')), 'skills')
+          - id: tool-skill
+            name: '@deepseek-ai/dsh-tool-skill'
+          - id: command-goal
+            name: '@deepseek-ai/dsh-command-goal'
+          - id: tool-goal
+            name: '@deepseek-ai/dsh-tool-goal'
+          - id: planning
+            name: cordis:group
+            group: true
+            isolate:
+              planMode: true
+            config:
+              - id: plan-mode
+                name: '@deepseek-ai/dsh-plan-mode'
+          - id: compaction
+            name: cordis:group
+            group: true
+            isolate:
+              compaction: true
+              toolResultPruner: true
+            config:
+              - id: compaction-basic
+                name: '@deepseek-ai/dsh-compaction-basic'
+              - id: command-compact
+                name: '@deepseek-ai/dsh-command-compact'
+              - id: tool-result-pruner
+                name: '@deepseek-ai/dsh-compaction-tool-result-pruner'
+                config:
+                  thresholdChars: 8192
+                  headChars: 4096
+                  tailChars: 1024
+          - id: delegation
+            name: cordis:group
+            group: true
+            isolate:
+              workflowEngine: true
+            config:
+              - id: tool-subagent-control
+                name: '@deepseek-ai/dsh-tool-subagent-control'
+                config:
+                  interrupt: false
+              - id: tool-subagent
+                name: '@deepseek-ai/dsh-tool-subagent'
+                config:
+                  provider: spawn
+                  toolName: subagent
+                  modelSelection: true
+                  modelDiscovery: true
+              - id: tool-subagent-fork
+                name: '@deepseek-ai/dsh-tool-subagent'
+                config:
+                  provider: fork
+                  toolName: subagent_fork
+              - id: workflow-ptc
+                name: '@deepseek-ai/dsh-workflow-ptc'
+                config:
+                  provider: spawn
+              - id: tool-workflow
+                name: '@deepseek-ai/dsh-tool-workflow'
+          - id: tool-ask-user
+            name: '@deepseek-ai/dsh-tool-ask-user'
+          - id: tool-todo
+            name: '@deepseek-ai/dsh-tool-todo'
+            config:
+              allowParallelInProgress: true
+          - id: tool-web
+            name: '@deepseek-ai/dsh-tool-web'
+            config:
+              fetch: true
+              searchTimeoutMs: 60000
+          - id: present
+            name: '@deepseek-ai/dsh-tool-present'
+          - id: tool-office
+            name: '@deepseek-ai/dsh-tool-office'
+          - id: tool-plugin-manager
+            name: '@deepseek-ai/dsh-plugin-manager/tools'
+            disabled: !!js "!ctx.get('profileContext')"
+          - id: tool-plugin-market
+            name: '@deepseek-ai/dsh-plugin-market/tools'
+            disabled: true
