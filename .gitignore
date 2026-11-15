@@ -14,6 +14,7 @@ coverage/
 .research/
 zotero-copy/
 *.local.json
+.demo/
 
 # secrets & personal data
 .env
@@ -31,4 +32,4 @@ Thumbs.db
 
 # editor
 .vscode/
-.idea/.demo/
+.idea/
