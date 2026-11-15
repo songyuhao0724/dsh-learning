@@ -43,14 +43,19 @@ export interface ZoteroFixture {
   localPdfPath: string;
 }
 
-export function createZoteroFixture(): ZoteroFixture {
+export interface ZoteroFixtureOptions {
+  /** 写进 storage/ATTACH01/paper.pdf 的字节；给了真 PDF 就能测端到端抽取。 */
+  paperPdf?: Uint8Array;
+}
+
+export function createZoteroFixture(options: ZoteroFixtureOptions = {}): ZoteroFixture {
   const root = mkdtempSync(join(tmpdir(), 'zotero-fixture-'));
   const dataDir = join(root, 'zotero-data');
   const dbPath = join(root, 'zotero.sqlite');
   mkdirSync(join(dataDir, 'storage', 'ATTACH01'), { recursive: true });
 
   const paperPath = join(dataDir, 'storage', 'ATTACH01', 'paper.pdf');
-  writeFileSync(paperPath, '%PDF-1.4 fixture');
+  writeFileSync(paperPath, options.paperPdf ?? '%PDF-1.4 fixture');
   const localPdfPath = join(root, 'local.pdf');
   writeFileSync(localPdfPath, '%PDF-1.4 local');
 

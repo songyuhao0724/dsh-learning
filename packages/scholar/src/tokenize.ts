@@ -130,6 +130,14 @@ export interface SnippetOptions {
   before?: number;
   /** 命中点之后保留的字符数。 */
   after?: number;
+  /**
+   * 只用于「定位」的锚点（例如中文二元组）。
+   *
+   * 中文查询「职业规划」在很多正文里并不连续出现（「职业生涯规划」），
+   * 这时用完整词找不到命中点，但索引里的二元组是命中的；
+   * 用锚点把片段窗口挪到真正相关的位置，但不给锚点加方括号（避免碎片化）。
+   */
+  anchors?: string[];
 }
 
 /**
@@ -152,6 +160,17 @@ export function makeSnippet(text: string, terms: string[], options: SnippetOptio
     if (idx >= 0 && (hitAt < 0 || idx < hitAt)) {
       hitAt = idx;
       hitLen = term.length;
+    }
+  }
+
+  if (hitAt < 0) {
+    for (const anchor of options.anchors ?? []) {
+      if (anchor.length < 2) continue;
+      const idx = lowered.indexOf(anchor.toLowerCase());
+      if (idx >= 0 && (hitAt < 0 || idx < hitAt)) {
+        hitAt = idx;
+        hitLen = anchor.length;
+      }
     }
   }
 

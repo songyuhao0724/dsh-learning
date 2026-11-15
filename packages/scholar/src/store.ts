@@ -141,6 +141,10 @@ export class ScholarStore {
 
     const hits: SearchHit[] = [];
     const seen = new Set<number>();
+    // 中文二元组只用来把片段窗口定位到命中处（不标方括号）。
+    const anchors = toIndexable(query)
+      .split(' ')
+      .filter((token) => token.length >= 2);
 
     const collect = (rows: ChunkRow[]): void => {
       for (const row of rows) {
@@ -148,7 +152,7 @@ export class ScholarStore {
         // 单字条件在 FTS5 里无法表达，取回后在这里过一遍。
         if (!plan.singleChars.every((ch) => row.text.includes(ch))) continue;
         seen.add(row.id);
-        hits.push(this.toHit(row, plan.terms));
+        hits.push(this.toHit(row, plan.terms, anchors));
         if (hits.length >= limit) return;
       }
     };
@@ -186,7 +190,7 @@ export class ScholarStore {
       .all(...chars.map((ch) => `%${ch}%`), limit) as unknown as ChunkRow[];
   }
 
-  private toHit(row: ChunkRow, terms: string[]): SearchHit {
+  private toHit(row: ChunkRow, terms: string[], anchors: string[] = []): SearchHit {
     let meta: Record<string, unknown> = {};
     try {
       meta = JSON.parse(row.meta) as Record<string, unknown>;
@@ -199,7 +203,7 @@ export class ScholarStore {
       text: row.text,
       meta,
       score: row.score,
-      snippet: makeSnippet(row.text, terms),
+      snippet: makeSnippet(row.text, terms, { anchors }),
     };
   }
 

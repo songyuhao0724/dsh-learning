@@ -28,3 +28,23 @@ export {
   type ZoteroItem,
   type ZoteroLibrarySummary,
 } from './zotero.js';
+export {
+  extractPdfPages,
+  extractPdfText,
+  normalizePdfText,
+  looksScanned,
+  type PdfExtractOptions,
+  type PdfPage,
+} from './pdf.js';
+export {
+  importZoteroLibrary,
+  indexPdfFile,
+  documentMeta,
+  pickPdf,
+  pagesToChunks,
+  type ImportOptions,
+  type ImportProgress,
+  type ImportResult,
+  type SkipReason,
+  type SkippedItem,
+} from './import.js';

@@ -6,6 +6,9 @@
   "description": "本地文献索引与带页码引用的检索：Zotero 只读导入 + FTS5 中文检索",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "bin": {
+    "dsh-scholar": "./dist/cli.js"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -22,5 +25,8 @@
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run"
+  },
+  "dependencies": {
+    "unpdf": "1.9.1"
   }
 }
