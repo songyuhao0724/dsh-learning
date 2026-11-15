@@ -1,24 +1,24 @@
 {
-  "name": "dsh-learning",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "description": "A student-facing AI learning system for DeepSeek Harness: career planning, coursework, and academic research in one agent preset.",
-  "packageManager": "pnpm@11.28.5",
-  "engines": {
-    "node": ">=22.13"
-  },
-  "scripts": {
-    "build": "pnpm -r --if-present build",
-    "typecheck": "pnpm -r --if-present typecheck",
-    "test": "pnpm -r --if-present test",
-    "validate:preset": "node scripts/validate-preset.mjs",
-    "check": "pnpm validate:preset && pnpm typecheck && pnpm test"
-  },
-  "devDependencies": {
-    "@types/node": "^22.10.2",
-    "typescript": "^5.7.2",
-    "vitest": "^2.1.8",
-    "yaml": "^2.9.1"
-  }
+    "name":  "dsh-learning",
+    "version":  "0.1.0",
+    "private":  true,
+    "type":  "module",
+    "description":  "A student-facing AI learning system for DeepSeek Harness: career planning, coursework, and academic research in one agent preset.",
+    "packageManager":  "pnpm@11.28.5",
+    "engines":  {
+                    "node":  "\u003e=22.13"
+                },
+    "scripts":  {
+                    "build":  "pnpm -r --if-present build",
+                    "typecheck":  "pnpm -r --if-present typecheck",
+                    "test":  "pnpm -r --if-present test",
+                    "validate:preset":  "node scripts/validate-preset.mjs",
+                    "check":  "pnpm validate:preset \u0026\u0026 pnpm typecheck \u0026\u0026 pnpm test"
+                },
+    "devDependencies":  {
+                            "@types/node":  "^22.10.2",
+                            "typescript":  "^5.7.2",
+                            "vitest":  "3.2.4",
+                            "yaml":  "^2.9.1"
+                        }
 }

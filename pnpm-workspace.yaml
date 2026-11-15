@@ -1,2 +1,6 @@
 packages:
   - packages/*
+
+# esbuild 的 postinstall 只做二进制自检，属于构建工具链的常规动作，这里显式放行。
+allowBuilds:
+  esbuild: true
