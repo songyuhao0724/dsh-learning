@@ -63,13 +63,21 @@
   技能差距 → 四年计划 → 热点论文 → 科研数据」全链路，`--online` 才联网、`--pdf` 可换成自己的 PDF。
 - `scripts/validate-preset.mjs`：预设补丁的静态校验（必填 config、行 id 唯一、`!!js` 标签可解析），
   CI 里先跑它，避免「装得上但一选中就炸」。
-- CI：Ubuntu + Windows × Node 22/24，`validate:preset → build → typecheck → test` 全绿（153 个测试）。
+- CI：Ubuntu + Windows × Node 22/24，`validate:preset → build → typecheck → test` 全绿（154 个测试）。
+
+### 修复
+
+- paper-radar 的 DOI 去重：当「后出现」的重复条目摘要更长而胜出时，旧实现会把胜者与败者
+  **一起丢掉**（胜者从未进入按 id 的索引表）。v0.1.0 发布前的异构评审发现并修复，
+  附回归测试（`packages/paper-radar/test/radar.test.ts`「同一 DOI 重复时保留摘要更长的一条」）。
 
 ### 文档
 
 - `README.md`：七个包与 14 个工具的总览、两条安装路径、三个「不显然但关键」的技术决定、对接 AIHOT 的方法。
 - `docs/integration.md`：使用者视角的安装、建档、配置、验证、卸载与故障排查。
 - `docs/architecture.md`：为什么是插件而不是独立应用、包拓扑、五条数据流、存储位置、验收标准。
+- `docs/review-v0.1.0.md` / `docs/review-report-v0.1.0.md` / `docs/review-evidence.md`：
+  异构模型评审清单、逐条核对报告与演示证据的原样输出。
 - `COMPLIANCE.md`：红线与边界（不绕过付费墙、不存他人的订阅凭证、单篇抓取交给 Zotero Connector）。
 
 ### 已知限制

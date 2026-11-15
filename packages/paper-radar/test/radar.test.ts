@@ -37,6 +37,33 @@ const BIORXIV_PAYLOAD = {
 };
 
 const PUBMED_SEARCH = { esearchresult: { count: '1', idlist: ['40000001'] } };
+
+// —— 同一 DOI 出现在两个源（arXiv 先、bioRxiv 后），且后出现的摘要更长 ——
+const ARXIV_XML_DUP = `<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <entry>
+    <id>http://arxiv.org/abs/2601.09999v1</id>
+    <published>2026-01-05T18:00:00Z</published>
+    <title>Same paper on arXiv</title>
+    <summary>Short.</summary>
+    <author><name>Ada Lovelace</name></author>
+    <arxiv:doi xmlns:arxiv="http://arxiv.org/schemas/atom">10.9999/dup</arxiv:doi>
+  </entry>
+</feed>`;
+
+const BIORXIV_DUP = {
+  collection: [
+    {
+      doi: '10.9999/dup',
+      title: 'Same paper on bioRxiv',
+      authors: 'Zhang San; Li Si',
+      date: '2026-01-04',
+      abstract: '这份摘要比 arXiv 那条更完整、更长，应当被保留下来。',
+      version: '1',
+    },
+  ],
+};
+
 const PUBMED_SUMMARY = {
   result: {
     uids: ['40000001'],
@@ -155,6 +182,23 @@ describe('collectRadar 汇总', () => {
     });
     expect(result.items).toHaveLength(0);
     expect(result.warnings.some((warning) => warning.includes('rehab'))).toBe(true);
+  });
+
+  it('同一 DOI 重复时保留摘要更长的一条——即使它出现在后面（回归：曾把两条都丢掉）', async () => {
+    const dupFetch: FetchLike = async (input) => {
+      if (input.startsWith('https://export.arxiv.org')) {
+        return { ok: true, status: 200, text: async () => ARXIV_XML_DUP, json: async () => ({}) };
+      }
+      if (input.startsWith('https://api.biorxiv.org')) {
+        const isMed = input.includes('/medrxiv/');
+        return { ok: true, status: 200, text: async () => '', json: async () => (isMed ? { collection: [] } : BIORXIV_DUP) };
+      }
+      return { ok: false, status: 404, text: async () => '', json: async () => ({}) };
+    };
+    const result = await collectRadar({ fetch: dupFetch, now: new Date('2026-01-06T00:00:00Z') });
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0]?.source).toBe('biorxiv');
+    expect(result.items[0]?.abstract).toContain('更完整');
   });
 });
 

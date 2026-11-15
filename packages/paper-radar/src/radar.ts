@@ -82,7 +82,7 @@ function tag(paper: Omit<RadarItem, 'topics'> | RadarItem): RadarItem {
   return { ...paper, topics };
 }
 
-/** 先按 DOI 去重（同一篇常同时出现在 bioRxiv 与 PubMed），再按 id 去重保留最新。 */
+/** 先按 DOI 去重（同一篇常同时出现在 bioRxiv 与 PubMed），再按 id 去重（同 id 保留先出现的）。 */
 function dedupe(items: RadarItem[]): RadarItem[] {
   const byDoi = new Map<string, RadarItem>();
   const byId = new Map<string, RadarItem>();
@@ -93,6 +93,10 @@ function dedupe(items: RadarItem[]): RadarItem[] {
       // 保留摘要更长的那条（PubMed 的摘要常被截断，bioRxiv 更全）。
       const winner = item.abstract.length > existing.abstract.length ? item : existing;
       byDoi.set(doi as string, winner);
+      // 胜者可能是「后出现」的条目、从未进过 byId；败者则必须从 byId 里去掉。
+      // 否则末尾的过滤会把胜者（不在 byId）和败者（不在 keep）一起丢掉 —— v0.1.0 评审发现的回归。
+      byId.delete(existing.id);
+      if (!byId.has(winner.id)) byId.set(winner.id, winner);
       continue;
     }
     if (doi !== undefined) byDoi.set(doi, item);
