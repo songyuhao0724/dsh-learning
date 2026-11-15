@@ -12,11 +12,13 @@
     "build": "pnpm -r --if-present build",
     "typecheck": "pnpm -r --if-present typecheck",
     "test": "pnpm -r --if-present test",
-    "check": "pnpm typecheck && pnpm test"
+    "validate:preset": "node scripts/validate-preset.mjs",
+    "check": "pnpm validate:preset && pnpm typecheck && pnpm test"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
     "typescript": "^5.7.2",
-    "vitest": "^2.1.8"
+    "vitest": "^2.1.8",
+    "yaml": "^2.9.1"
   }
 }
