@@ -3,6 +3,30 @@
 本项目的所有重要变更都记录在这里。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.1.1] - 2026-11-17
+
+首个在 CI 上真正跑通的版本。`v0.1.0` 的提交内容本身可用（本地 `pnpm check` 全绿），
+但 GitHub Actions 里四个 job 全挂在装依赖那一步，仓库给人的第一印象是红的。
+
+### 修复
+
+- **CI 从未成功过**：workflow 里写了 `with: version: 11`，根 `package.json` 又声明了
+  `packageManager: pnpm@11.28.5`，`pnpm/action-setup` 因此报
+  `Multiple versions of pnpm specified ... ERR_PNPM_BAD_PM_VERSION`。删掉 workflow 里的
+  `version`，统一以 `packageManager` 为准。
+- **文档里的仓库地址**：`github.com/songyuhao0724/-AI-` 只是 301 跳转到规范名
+  `dsh-learning`，README 的地址、`clone` 命令与 `cd` 目录名均已改正。
+
+### 变更
+
+- CI 动作升级到 `actions/checkout@v7`、`pnpm/action-setup@v6`（该版本起显式支持 pnpm 11）、
+  `actions/setup-node@v7`，同时消掉 `Node.js 20 is deprecated` 告警。
+
+### 验证
+
+- [run 43999532814](https://github.com/songyuhao0724/dsh-learning/actions/runs/43999532814)：
+  Ubuntu + Windows × Node 22/24，四个 job 各 13 步全绿。
+
 ## [0.1.0] - 2026-11-15
 
 首个可用版本：DSH 里的「大学生 AI 学习系统」插件套件 —— 一个预设 + 14 个工具 + 5 个可独立调用的库。
