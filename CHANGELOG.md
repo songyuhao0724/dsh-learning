@@ -21,17 +21,26 @@
 
 - CI 动作升级到 `actions/checkout@v7`、`pnpm/action-setup@v6`（该版本起显式支持 pnpm 11）、
   `actions/setup-node@v7`，同时消掉 `Node.js 20 is deprecated` 告警。
-- **scholar 的测试超时放宽到 30s**：`node:sqlite` + PDF 抽取在 Windows 托管 runner 上比开发机慢
-  约 30 倍（本机 150–300ms 的用例，CI 上 5–7s），默认的 5s/10s 会把「机器慢」判成「测试挂了」。
-  这是对慢硬件的适配，不是掩盖问题——真超时仍然会失败，只是给了足够的余量。
-- **失败信息可被公开读取**：测试输出落盘，失败时把关键行写成 GitHub annotation。这样不登录
-  Actions 页面、只用公开 API 也能看到是哪个用例挂了（此前失败只存在于需要登录才能下载的日志里）。
+- **scholar 的测试不再被慢机器判死**。Windows 托管 runner 上建一个 Zotero 夹具库要 3–6 秒
+  （本机 150–300ms，差在杀软实时扫描新落盘的 `.sqlite`），于是默认配置在两个地方误判：
+  1. `testTimeout`/`hookTimeout` 默认 5s/10s —— 把「机器慢」报成断言失败
+     （[run 44000503729](https://github.com/songyuhao0724/dsh-learning/actions/runs/44000503729)，
+     `pagesToChunks 每页一条` 这种纯函数用例也红了）；
+  2. 多个测试文件并行时主线程喂不上 worker 的回调，抛
+     `Error: [vitest-worker]: Timeout calling "onTaskUpdate"` —— 63 个测试全过仍判失败
+     （[run 44001560645](https://github.com/songyuhao0724/dsh-learning/actions/runs/44001560645)）。
+  对策：超时放宽到 30s，`pool: 'forks'` + `fileParallelism: false` 顺序跑文件，
+  并把 `zotero.test.ts` 的夹具从「每个用例建一次」改成「整个文件建一次」（该文件的用例全只读）。
+  真超时、真断言失败一样会红——改的是误判，不是阈值。
+- **失败信息可被公开读取**：测试输出落盘，失败时把关键行压成一条 GitHub annotation。
+  不登录 Actions 页面、只用公开 API 也能看到哪个用例挂了（此前失败只存在于需要登录才能下载的日志里；
+  中途还踩过一次坑：vitest 用 ANSI 转义序列把 `FAIL ` 包起来，不剥颜色就 grep 不到）。
 
 ### 验证
 
-- [run 44000503729](https://github.com/songyuhao0724/dsh-learning/actions/runs/44000503729) 暴露了
-  Windows runner 的慢速问题（四个 job 里两个 Windows 失败，失败步骤是 `pnpm test`）；
-  修复后的验证见本版本 tag 所在提交的 CI。
+- [run 44000503729](https://github.com/songyuhao0724/dsh-learning/actions/runs/44000503729) 与
+  [run 44001560645](https://github.com/songyuhao0724/dsh-learning/actions/runs/44001560645) 分别暴露了
+  上面两个问题（都是 Windows job 红、Ubuntu 绿）；修复后的验证见本版本 tag 所在提交的 CI。
 
 ## [0.1.0] - 2026-11-15
 

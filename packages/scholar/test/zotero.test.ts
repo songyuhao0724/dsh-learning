@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import {
   attachFiles,
   getItem,
@@ -15,11 +15,17 @@ import {
 import { createZoteroFixture, type ZoteroFixture } from './fixtures/zotero-fixture.js';
 
 describe('Zotero 只读适配层', () => {
+  // 这个文件里的用例全是只读的：读库、读字段、读附件、模拟独占锁。
+  // 所以夹具库建一次就够——建库在 Windows 托管 runner 上要 3–6s（杀软扫新文件），
+  // 每个用例重建一次就是纯浪费，也把整个文件拖到超时边缘。
   let fixture: ZoteroFixture;
   let handle: ZoteroHandle;
 
-  beforeEach(() => {
+  beforeAll(() => {
     fixture = createZoteroFixture();
+  });
+
+  beforeEach(() => {
     handle = openZoteroDb(fixture.dbPath);
   });
 
