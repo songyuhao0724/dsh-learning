@@ -37,13 +37,13 @@
 
 ## 快速开始
 
-仓库地址：**https://github.com/songyuhao0724/-AI-**
+仓库地址：**https://github.com/songyuhao0724/dsh-learning**
 
 前置：已安装 DeepSeek Harness（桌面版或 Web 版）、Node ≥ 22.13、pnpm 11。
 
 ```pwsh
-git clone https://github.com/songyuhao0724/-AI-.git
-cd -AI-
+git clone https://github.com/songyuhao0724/dsh-learning.git
+cd dsh-learning
 pnpm install
 pnpm build
 ```
