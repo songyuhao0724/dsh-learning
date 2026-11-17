@@ -1,6 +1,6 @@
 {
   "name": "@dsh-learning/learning-tools",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "private": true,
   "type": "module",
   "description": "把 scholar / carsi-router / career 三个库暴露成 DSH 工具：文献索引检索、可得性路由、检索式、职业画像与四年计划",

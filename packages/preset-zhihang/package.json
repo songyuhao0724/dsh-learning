@@ -1,6 +1,6 @@
 {
   "name": "@dsh-learning/preset-zhihang",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "private": true,
   "type": "module",
   "description": "知航 · 大学生 AI 伴学助手预设（Cordis agent preset bundle）",

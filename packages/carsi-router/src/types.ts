@@ -31,6 +31,13 @@ export interface LibraryResource {
   note?: string;
   /** 官方入口（拿不到就留空，绝不编造）。 */
   url?: string;
+  /**
+   * 无登录实测的可达性（2026-11-17 采集）：
+   * - `open`：匿名就能拿到检索结果（开放获取、公开 API、国家平台）
+   * - `session`：网络通，但必须带本校登录态才能用到全文/检索结果
+   * - `unreachable`：在通用网络上连不通（DNS/TLS/TCP），只能换入口或在校网内试
+   */
+  reachable?: 'open' | 'session' | 'unreachable';
   verified: boolean;
 }
 

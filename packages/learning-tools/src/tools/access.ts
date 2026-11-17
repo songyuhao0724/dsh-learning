@@ -120,6 +120,7 @@ export function registerAccessTools(ctx: PluginContext, config: ToolsConfig): vo
         suggestions: plan.suggestions.map((resource) => ({
           name: resource.name,
           access: resource.access,
+          ...(resource.url === undefined ? {} : { url: resource.url }),
           hint: openHint(resource),
         })),
       };
@@ -145,13 +146,13 @@ export function registerAccessTools(ctx: PluginContext, config: ToolsConfig): vo
       render: (_args, value) => {
         const result = value as {
           total: number;
-          resources: Array<{ name: string; provider: string; access: string; category: string; coverage?: string; note?: string; hint: string }>;
+          resources: Array<{ name: string; provider: string; access: string; category: string; coverage?: string; note?: string; url?: string; hint: string }>;
         };
-        const head = `资源目录共 ${result.total} 条（学校视角，标签来自 CARSI 门户，可能变化）。`;
+        const head = `资源目录共 ${result.total} 条（学校视角，标签来自 CARSI 门户与图书馆订购清单，可能变化）。`;
         if (result.resources.length === 0) return text(head, '没有匹配的条目，换个关键词试试。');
         const blocks = result.resources.map(
           (resource, index) =>
-            `${index + 1}. ${resource.name}（${resource.provider}｜${ACCESS_NAME[resource.access] ?? resource.access}｜${resource.category}）\n   ${resource.coverage ?? ''}${resource.note === undefined ? '' : `\n   备注：${resource.note}`}\n   ${resource.hint}`,
+            `${index + 1}. ${resource.name}（${resource.provider}｜${ACCESS_NAME[resource.access] ?? resource.access}｜${resource.category}）\n   ${resource.coverage ?? ''}${resource.note === undefined ? '' : `\n   备注：${resource.note}`}${resource.url === undefined ? '' : `\n   地址：${resource.url}`}\n   ${resource.hint}`,
         );
         return text(head, '', ...blocks);
       },
@@ -181,6 +182,7 @@ export function registerAccessTools(ctx: PluginContext, config: ToolsConfig): vo
           category: resource.category,
           ...(resource.coverage === undefined ? {} : { coverage: resource.coverage }),
           ...(resource.note === undefined ? {} : { note: resource.note }),
+          ...(resource.url === undefined ? {} : { url: resource.url }),
           hint: openHint(resource),
         })),
       };

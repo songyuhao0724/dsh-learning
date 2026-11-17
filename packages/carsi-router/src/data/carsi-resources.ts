@@ -1,30 +1,61 @@
 /**
  * 内置的 CARSI 资源目录（种子）。
  *
- * 来源：CARSI 应用资源门户（北京大学计算中心运营）在**康复大学**身份下的可见条目，
- * 采集于 2026-11-15。门户共 96 条（校购 16 / 免费 14 / 试用 55 / 免费或试用 13），
- * 这里只收录**能逐条复述、可被社区复核**的 17 条；其余条目等有把握时再补。
+ * 来源有两处，都逐条复核过：
+ * 1. CARSI 应用资源门户（北京大学计算中心运营）在**康复大学**身份下的可见条目，采集于 2026-11-15。
+ *    门户共 96 条（校购 16 / 免费 14 / 试用 55 / 免费或试用 13）。
+ * 2. 康复大学图书馆「中文数据库 / 外文数据库 / 试用数据库」三张清单（lib.uhrs.edu.cn/gzzy/*.htm），
+ *    校对于 2026-11-17。**学校实际在订的库比门户条目更全**，ScienceDirect、Wiley、万方、维普、
+ *    中华医学期刊全文库这类高频库只出现在图书馆清单里，因此以图书馆清单为准补齐。
  *
  * 收录原则：
  * 1. 不猜 URL。拿不到官方入口就留 `url` 为空，让用户从门户里点。
  * 2. 不写「试用即将到期」之类会过期的营销话术，只写入口形态与需要个人账号与否。
  * 3. 新增条目请附出处（PR 描述里贴截图/官方页面链接）。
+ * 4. `reachable` 记录 2026-11-17 的无登录实测结果：能匿名拿到检索结果的是 `open`，
+ *    必须带本校会话才能用的（订阅库）是 `session`，网络层就不通的是 `unreachable`。
  */
 import type { CatalogMeta, LibraryResource } from '../types.js';
 
 export const CATALOG_META: CatalogMeta = {
-  collectedOn: '2026-11-15',
-  portal: 'CARSI 应用资源门户（北京大学计算中心运营）',
+  collectedOn: '2026-11-17',
+  portal: 'CARSI 应用资源门户（北京大学计算中心运营）＋ 康复大学图书馆订购清单',
   institution: '康复大学',
   counts: { total: 96, subscription: 16, free: 14, trial: 55, mixed: 13 },
   note:
     '门户条数按本校当前权限统计，会随学校采购与试用周期变化。本仓库只内置可复核条目，' +
     '不内置「试用」期的临时资源（试用结束后链接必然失效）。' +
-    'access 层级依据门户上的「校购/免费/试用」标签记录（门户单校清单页需登录，无法自动校验），' +
-    '不同学校、不同时间可能不一致——答复用户时请勿承诺「一定免费」，以门户实时状态为准。',
+    'access 层级依据门户/图书馆清单上的「校购/免费/试用」标签记录，' +
+    '不同学校、不同时间可能不一致——答复用户时请勿承诺「一定免费」，以门户实时状态为准。' +
+    '订阅库的 URL 只是商品页入口，能不能下全文取决于请求方是否带着本校登录态。',
 };
 
 export const CARSI_RESOURCES: LibraryResource[] = [
+  // ===== 外文库（图书馆「外文数据库」清单）=====
+  {
+    id: 'web-of-science',
+    name: 'Web of Science',
+    provider: 'Clarivate',
+    access: 'subscription',
+    category: 'index',
+    coverage: ['引文检索', '影响因子', '被引分析', '文献计量'],
+    note: '校购（SCIE / SSCI / InCites / ESI）。做文献综述、查被引、找高影响力论文的入口。国内镜像走 clarivate.cn 域名，比 .com 稳。',
+    url: 'https://webofscience.clarivate.cn/',
+    reachable: 'session',
+    verified: true,
+  },
+  {
+    id: 'sciencedirect',
+    name: 'Elsevier ScienceDirect',
+    provider: 'Elsevier',
+    access: 'subscription',
+    category: 'literature',
+    coverage: ['英文期刊', '医学', '生命科学', '全文'],
+    note: '校购。全文体量最大的一家，医学与生命科学覆盖最全；无登录直接请求返回 403。',
+    url: 'https://www.sciencedirect.com/',
+    reachable: 'session',
+    verified: true,
+  },
   {
     id: 'springerlink',
     name: 'SpringerLink',
@@ -32,7 +63,9 @@ export const CARSI_RESOURCES: LibraryResource[] = [
     access: 'subscription',
     category: 'literature',
     coverage: ['英文期刊', '电子书', '计算机', '医学', '生命科学'],
-    note: '校购。CARSI 登录后可下载订阅期内期刊与电子书章节。',
+    note: '校购。CARSI 登录后可下载订阅期内期刊与电子书章节。匿名检索会带 cookies_not_supported 参数，结果页需要会话。',
+    url: 'https://link.springer.com/',
+    reachable: 'session',
     verified: true,
   },
   {
@@ -43,26 +76,20 @@ export const CARSI_RESOURCES: LibraryResource[] = [
     category: 'literature',
     coverage: ['顶级期刊', '生命科学', '综述', '新闻'],
     note: '校购。含 Nature 系列期刊，部分子刊可能不在订阅范围。',
+    url: 'https://www.nature.com/',
+    reachable: 'session',
     verified: true,
   },
   {
-    id: 'web-of-science',
-    name: 'Web of Science',
-    provider: 'Clarivate',
-    access: 'subscription',
-    category: 'index',
-    coverage: ['引文检索', '影响因子', '被引分析', '文献计量'],
-    note: '校购。做文献综述、查被引、找高影响力论文的入口。',
-    verified: true,
-  },
-  {
-    id: 'cnki',
-    name: '中国知网 CNKI',
-    provider: '同方知网',
+    id: 'wiley',
+    name: 'Wiley Online Library',
+    provider: 'Wiley',
     access: 'subscription',
     category: 'literature',
-    coverage: ['中文期刊', '学位论文', '会议论文', '中文检索'],
-    note: '校购。中文文献第一入口；专业检索式语法见 docs 里的检索式生成说明。',
+    coverage: ['英文期刊', '医学', '生命科学', '化学'],
+    note: '校购。无登录直接请求检索页返回 403。',
+    url: 'https://onlinelibrary.wiley.com/',
+    reachable: 'session',
     verified: true,
   },
   {
@@ -72,7 +99,59 @@ export const CARSI_RESOURCES: LibraryResource[] = [
     access: 'subscription',
     category: 'literature',
     coverage: ['英文期刊', '医学', '生物信息'],
-    note: '校购；个人也可单独购买单篇。',
+    note: '校购（现刊库）；个人也可单独购买单篇。无登录请求会被 Cloudflare 拦（403 Just a moment）。',
+    url: 'https://academic.oup.com/journals/',
+    reachable: 'session',
+    verified: true,
+  },
+
+  // ===== 中文库（图书馆「中文数据库」清单）=====
+  {
+    id: 'cnki',
+    name: '中国知网 CNKI',
+    provider: '同方知网',
+    access: 'subscription',
+    category: 'literature',
+    coverage: ['中文期刊', '学位论文', '会议论文', '中文检索'],
+    note: '校购。中文文献第一入口；专业检索式语法见/docs 里的检索式生成说明。匿名访问检索页会被弹滑块验证（kns.cnki.net/verify），必须用本校会话。',
+    url: 'https://www.cnki.net/',
+    reachable: 'session',
+    verified: true,
+  },
+  {
+    id: 'wanfang',
+    name: '万方数据知识服务平台',
+    provider: '万方数据',
+    access: 'subscription',
+    category: 'literature',
+    coverage: ['中文期刊', '学位论文', '会议论文', '标准', '专利'],
+    note: '校购。知网之外最常用的中文库，学位论文与会议论文收录较全。',
+    url: 'https://www.wanfangdata.com.cn/',
+    reachable: 'session',
+    verified: true,
+  },
+  {
+    id: 'cqvip',
+    name: '维普中文期刊服务平台',
+    provider: '维普资讯',
+    access: 'subscription',
+    category: 'literature',
+    coverage: ['中文期刊', '中文检索'],
+    note: '校购。期刊种类多，检索页对无会话请求返回 412。',
+    url: 'https://qikan.cqvip.com/',
+    reachable: 'session',
+    verified: true,
+  },
+  {
+    id: 'yiigle',
+    name: '中华医学期刊全文数据库',
+    provider: '中华医学会',
+    access: 'subscription',
+    category: 'literature',
+    coverage: ['医学', '临床', '中文期刊', '指南', '病例'],
+    note: '校购。医学方向绕不开的一家：临床指南、病例、中华系列期刊都在这。做医学交叉课题先来这里。',
+    url: 'http://www.yiigle.com',
+    reachable: 'session',
     verified: true,
   },
   {
@@ -82,9 +161,37 @@ export const CARSI_RESOURCES: LibraryResource[] = [
     access: 'subscription',
     category: 'literature',
     coverage: ['中文图书', '图书章节', '教材', '知识库'],
-    note: '校购。找教材、专著章节比知网更合用；可按章节传阅。',
+    note: '校购。找教材、查书里某段话出自哪本书用它；无会话请求会被 302 跳转到登录。',
+    url: 'https://www.duxiu.com/',
+    reachable: 'session',
     verified: true,
   },
+  {
+    id: 'nstl',
+    name: '国家科技图书文献中心 NSTL',
+    provider: '中国科学院文献情报中心',
+    access: 'free',
+    category: 'literature',
+    coverage: ['外文文献', '文献传递', '题录检索', '科技报告'],
+    note: '免费检索；全文靠文献传递（通常收费但比单篇订阅便宜）。学校没订的刊可以先来这里问题录。',
+    url: 'https://www.nstl.gov.cn/',
+    reachable: 'open',
+    verified: true,
+  },
+  {
+    id: 'ncpssd',
+    name: '国家哲学社会科学文献中心',
+    provider: '中国社会科学院',
+    access: 'free',
+    category: 'literature',
+    coverage: ['中文期刊', '社科', '开放获取'],
+    note: '免费。社科类中文期刊可开放下载；做健康政策、伦理、医患沟通这类题会用得上。',
+    url: 'https://www.ncpssd.cn/',
+    reachable: 'open',
+    verified: true,
+  },
+
+  // ===== 期刊评价 =====
   {
     id: 'cas-jcr',
     name: '中国科学院文献情报中心期刊分区表',
@@ -92,9 +199,13 @@ export const CARSI_RESOURCES: LibraryResource[] = [
     access: 'subscription',
     category: 'index',
     coverage: ['期刊分区', '投稿选刊', '影响因子'],
-    note: '校购。判断「这本刊值不值得投」的国内常用依据。',
+    note: '校购。判断「这本刊值不值得投」的国内常用依据。入口在图书馆详情页给的是 fenqubiao.com/landing.html，该域名在通用网络上 DNS 解析失败，**只能在校网/已登录状态下打开**；打不开就改从图书馆门户点。',
+    url: 'http://www.fenqubiao.com/landing.html',
+    reachable: 'unreachable',
     verified: true,
   },
+
+  // ===== 免费平台（CARSI 门户）=====
   {
     id: 'medseek',
     name: 'MedSeek 厚道医学教育大模型',
@@ -102,7 +213,7 @@ export const CARSI_RESOURCES: LibraryResource[] = [
     access: 'free',
     category: 'ai-tool',
     coverage: ['医学教育', '病例', '医学问答', 'AI 学伴'],
-    note: '免费。医学课程学习与病例理解可用。',
+    note: '免费。医学课程学习与病例理解可用。入口从 CARSI 门户进，未单独记录官方域名。',
     verified: true,
   },
   {
@@ -112,7 +223,7 @@ export const CARSI_RESOURCES: LibraryResource[] = [
     access: 'free',
     category: 'compute',
     coverage: ['科学计算', '建模仿真', 'Modelica'],
-    note: '免费。做系统建模/仿真时可用，替代部分 MATLAB 场景。',
+    note: '免费。做系统建模/仿真时可用，替代部分 MATLAB 场景。入口从 CARSI 门户进。',
     verified: true,
   },
   {
@@ -122,7 +233,7 @@ export const CARSI_RESOURCES: LibraryResource[] = [
     access: 'free',
     category: 'ai-tool',
     coverage: ['AI 学伴', '课程问答', '学习计划'],
-    note: '免费。适合课程内答疑与复习。',
+    note: '免费。适合课程内答疑与复习。入口从 CARSI 门户进。',
     verified: true,
   },
   {
@@ -132,7 +243,7 @@ export const CARSI_RESOURCES: LibraryResource[] = [
     access: 'free',
     category: 'course',
     coverage: ['通识课程', '英文授课', '公开课'],
-    note: '免费。通识与英文授课视频课程。',
+    note: '免费。通识与英文授课视频课程。入口从 CARSI 门户进。',
     verified: true,
   },
   {
@@ -142,7 +253,7 @@ export const CARSI_RESOURCES: LibraryResource[] = [
     access: 'free',
     category: 'compute',
     coverage: ['云计算', '算力', '科学计算环境'],
-    note: '免费。需要跑大计算但本机不够时可以先看这里。',
+    note: '免费。需要跑大计算但本机不够时可以先看这里。入口从 CARSI 门户进，一般要单独申请额度。',
     verified: true,
   },
   {
@@ -152,7 +263,9 @@ export const CARSI_RESOURCES: LibraryResource[] = [
     access: 'free',
     category: 'data',
     coverage: ['基因组', '测序数据', '生命大数据', '生物信息'],
-    note: '免费；部分数据需申请或付费下载。生信方向找公开数据集的重要入口。',
+    note: '免费；部分数据需申请或付费下载。生信方向找公开数据集的重要入口，与 NCBI GEO/SRA 互补（国内下载快）。',
+    url: 'https://db.cngb.org/',
+    reachable: 'open',
     verified: true,
   },
   {
@@ -162,7 +275,21 @@ export const CARSI_RESOURCES: LibraryResource[] = [
     access: 'free',
     category: 'data',
     coverage: ['地学数据', '古气候', '空间数据'],
-    note: '免费。做地学/环境交叉课题时的数据源。',
+    note: '免费。做地学/环境交叉课题时的数据源。实测 deep-time.org 的 TLS 握手超时、dde.cags.ac.cn 域名不解析，入口可能已迁移，需从门户重新确认。',
+    url: 'https://www.deep-time.org/',
+    reachable: 'unreachable',
+    verified: true,
+  },
+  {
+    id: 'sciopen',
+    name: 'SciOpen（科技期刊国际化数字出版平台）',
+    provider: '清华大学出版社',
+    access: 'free',
+    category: 'literature',
+    coverage: ['开放获取', '中文期刊', '英文期刊', '工程'],
+    note: '免费。国内开放获取期刊平台，找国产期刊原文时比通用检索快。',
+    url: 'https://www.sciopen.com/home',
+    reachable: 'open',
     verified: true,
   },
   {
@@ -172,7 +299,7 @@ export const CARSI_RESOURCES: LibraryResource[] = [
     access: 'free',
     category: 'course',
     coverage: ['网络技术', '视频课程', '公开课'],
-    note: '免费。计算机网络与工程类课程。',
+    note: '免费。计算机网络与工程类课程。入口从 CARSI 门户进。',
     verified: true,
   },
   {
@@ -182,7 +309,7 @@ export const CARSI_RESOURCES: LibraryResource[] = [
     access: 'free',
     category: 'patent',
     coverage: ['专利检索', '专利分析', '成果转化'],
-    note: '免费。查同类专利、看技术空白点用。',
+    note: '免费。查同类专利、看技术空白点用。提供方待核实，入口从门户进。',
     verified: true,
   },
   {
@@ -195,4 +322,16 @@ export const CARSI_RESOURCES: LibraryResource[] = [
     note: '免费。看国内前沿综述比逐篇检索更快建立框架。',
     verified: true,
   },
+];
+
+/** 图书馆清单里还有、但本目录暂未单列的资源（免费为主，避免目录被低相关条目稀释）。 */
+export const LIBRARY_EXTRAS: string[] = [
+  '中国光学期刊网 opticsjournal.net',
+  '中国科技论文在线 paper.edu.cn（预印本）',
+  '中国工程科技知识中心 prod.ckcest.cn',
+  '汉斯国际中文开源学术期刊 hanspub.org',
+  '龙源期刊网',
+  'e线图情 chinalibs.net',
+  '科研之家 home-for-researchers.com',
+  '阅途美育 myu100.com',
 ];

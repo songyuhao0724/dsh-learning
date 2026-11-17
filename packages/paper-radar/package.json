@@ -1,6 +1,6 @@
 {
   "name": "@dsh-learning/paper-radar",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "private": true,
   "type": "module",
   "description": "热点论文雷达：从 arXiv / bioRxiv / medRxiv / PubMed 抓近期论文，按主题打标，导出成 AIHOT json_list 契约的 JSON 信源",

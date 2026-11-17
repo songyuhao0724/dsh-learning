@@ -3,6 +3,38 @@
 本项目的所有重要变更都记录在这里。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.1.2] - 2026-11-17
+
+资源目录从「门户条目」扩到「学校实际在订的库」，并给每一条标注了无登录实测的可达性。
+
+### 新增
+
+- **CARSI 资源目录 17 → 25 条**。对照康复大学图书馆的「中文数据库 / 外文数据库 / 试用数据库」
+  三张订购清单后补齐 8 条高频库：ScienceDirect、Wiley Online Library、SciOpen、万方数据、
+  维普中文期刊、中华医学期刊全文库（yiigle）、NSTL、国家哲学社会科学文献中心。
+  此前问「中文文献去哪查」只会给出知网和读秀，问「医学临床文献」一个都指不出来。
+- **`LibraryResource.reachable`**：`open` / `session` / `unreachable` 三态，记录 2026-11-17 的
+  无登录实测结果。`openHint()` 据此分流：`session` 的给出入口 URL 并说明「不带本校登录态会被拦，
+  属正常」；`unreachable` 的直接劝用户别在命令行反复重试（分区表 `fenqubiao.com` 在通用网络上
+  DNS 就解析不出来，DDE 的 TLS 握手超时）。
+- **`LIBRARY_EXTRAS`**：清单里还有、但与本项目方向相关性低因而未单列的免费资源
+  （光学、地学、社科等），保留可查，不稀释推荐结果。
+- 订阅库补齐 `url`（此前 17 条一个地址都没有，只有名字和备注）。
+
+### 修复
+
+- **arXiv 失败不再是一句 `fetch failed`**：实测不少校园网到 `export.arxiv.org` 的 TCP 443 不通
+  （DNS 正常解析到 152.19.x 之外的 Fastly 段，连接超时）。现在 `describeFailure()` 会明确说
+  「这是网络侧限制、不是插件故障，本轮先看 bioRxiv / medRxiv / PubMed」，免得用户以为程序坏了。
+- 推荐表随目录更新：`literature-zh` 改为知网→万方→维普→中华医学期刊→NSTL→读秀，
+  `literature-en` 加入 ScienceDirect 与 Wiley，`bioinformatics` 加入 ScienceDirect。
+
+### 验证
+
+`pnpm check` 全绿（154 个测试）。另外用 `dist/` 直接跑了一遍目录烟测：25 条、六类分布
+`literature 14 / index 2 / data 2 / ai-tool 2 / compute 2 / course 2 / patent 1`，
+三种 `reachable` 的 `openHint()` 输出均符合预期。
+
 ## [0.1.1] - 2026-11-17
 
 首个在 CI 上真正跑通的版本。`v0.1.0` 的提交内容本身可用（本地 `pnpm check` 全绿），

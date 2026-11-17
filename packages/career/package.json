@@ -1,6 +1,6 @@
 {
   "name": "@dsh-learning/career",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "private": true,
   "type": "module",
   "description": "职业规划：RIASEC 兴趣画像、岗位画像、粘贴 JD 解析、技能差距与四年计划",

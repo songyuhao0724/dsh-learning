@@ -13,6 +13,27 @@ export interface RadarResult {
 const DEFAULT_FETCH: FetchLike = (input, init) => globalThis.fetch(input, init);
 
 /**
+ * 把抓取失败翻译成用户能动手的话。
+ *
+ * 实测（2026-11-17）：不少校园网到 export.arxiv.org 的 TCP 443 是不通的，
+ * DNS 能解析、连接超时，报错却是干巴巴的 `fetch failed` 或 `The operation was aborted`。
+ * 用户看到这种字会以为插件坏了，所以要直接告诉他这是网络侧问题、换源即可。
+ */
+function describeFailure(label: string, reason: unknown): string {
+  const raw = reason instanceof Error ? reason.message : String(reason);
+  const networkish = /fetch failed|abort|timeout|ETIMEDOUT|ECONNRESET|ECONNREFUSED|ENOTFOUND|socket|network/i.test(
+    raw,
+  );
+  if (label === 'arXiv' && networkish) {
+    return `连不上 export.arxiv.org（${raw}）。部分校园网会阻断到 arXiv 的连接，这是网络侧限制、不是插件故障；本轮先看 bioRxiv / medRxiv / PubMed 的结果。要抓 arXiv 可以挂学校 VPN 或换个网络再试。`;
+  }
+  if (networkish) {
+    return `网络请求失败（${raw}）。先确认能上网、或换网络重试，其他源不受影响。`;
+  }
+  return raw;
+}
+
+/**
  * 抓一轮热点：arXiv 永远抓；bioRxiv / medRxiv 抓最近 days 天；
  * 只有给了 query 才查 PubMed（避免无主题时把 PubMed 全库噪音拉进来）。
  */
@@ -59,7 +80,7 @@ export async function collectRadar(options: RadarOptions = {}): Promise<RadarRes
       collected.push(...outcome.value.items);
     } else {
       perSourceCount[label] = 0;
-      warnings.push(`${label} 抓取失败：${outcome.reason instanceof Error ? outcome.reason.message : String(outcome.reason)}`);
+      warnings.push(`${label} 抓取失败：${describeFailure(label, outcome.reason)}`);
     }
   });
 

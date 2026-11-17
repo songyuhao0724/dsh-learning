@@ -1,6 +1,6 @@
 {
   "name": "@dsh-learning/carsi-router",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "private": true,
   "type": "module",
   "description": "CARSI 资源画像 + 论文可得性路由 + 检索式生成：告诉你去哪儿拿全文、怎么写检索式",

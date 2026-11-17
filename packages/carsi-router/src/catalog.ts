@@ -10,14 +10,14 @@ import type { AccessKind, LibraryResource, ResourceCategory, TaskKind } from './
 
 /** 任务 → 优先资源 id（按顺序）。 */
 const TASK_RECOMMENDATIONS: Record<TaskKind, string[]> = {
-  'literature-en': ['web-of-science', 'springerlink', 'nature', 'oxford-journals'],
-  'literature-zh': ['cnki', 'duxiu', 'frontiers-cn'],
+  'literature-en': ['web-of-science', 'sciencedirect', 'springerlink', 'wiley', 'nature', 'oxford-journals'],
+  'literature-zh': ['cnki', 'wanfang', 'cqvip', 'yiigle', 'nstl', 'duxiu'],
   'journal-ranking': ['cas-jcr', 'web-of-science'],
   'research-data': ['cngbdb', 'dde', 'oscca-cloud'],
   'ai-study': ['medseek', 'miguo'],
   course: ['shangniu-course', 'cernet-video-course', 'medseek'],
   patent: ['patent-platform'],
-  bioinformatics: ['cngbdb', 'web-of-science', 'springerlink', 'oscca-cloud'],
+  bioinformatics: ['cngbdb', 'sciencedirect', 'web-of-science', 'springerlink', 'oscca-cloud'],
 };
 
 export interface FindOptions {
@@ -75,24 +75,32 @@ export function recommendResources(task: TaskKind): LibraryResource[] {
     .map((resource) => ({ ...resource }));
 }
 
-/** 打开一条资源时的操作提示（不猜 URL，只讲流程）。 */
+/** 打开一条资源时的操作提示（有官方 URL 就直说，没有才讲流程）。 */
 export function openHint(resource: LibraryResource): string {
   const base = '在浏览器里先登录 CARSI（ds.carsi.edu.cn），再从资源门户点开该资源。';
+  if (resource.reachable === 'unreachable') {
+    return `这个入口在通用网络上连不通（DNS/TLS 超时），别在命令行里反复重试：换从图书馆门户点，或到校网/已登录状态下再打开。${resource.url === undefined ? '' : `图书馆记录的地址是 ${resource.url}`}`;
+  }
+  if (resource.reachable === 'open' && resource.url !== undefined) {
+    return `可以直接打开：${resource.url}（免费或开放获取，不依赖学校登录）。`;
+  }
+  const entry = resource.url === undefined ? '' : `入口：${resource.url}（不带本校登录态会被拦，属正常）。`;
+  const session = resource.reachable === 'session' ? `${entry}${base}` : base;
   switch (resource.category) {
     case 'index':
-      return `${base}检索类工具建议先用 Web of Science 收窄范围，再用分区表判断期刊层次。`;
+      return `${session}检索类工具建议先用 Web of Science 收窄范围，再用分区表判断期刊层次。`;
     case 'data':
-      return `${base}数据平台通常需要注册账号；先读数据使用条款再下载。`;
+      return `${session}数据平台通常需要注册账号；先读数据使用条款再下载。`;
     case 'ai-tool':
-      return `${base}AI 类工具只用来辅助理解，结论要回到原始文献核对。`;
+      return `${session}AI 类工具只用来辅助理解，结论要回到原始文献核对。`;
     case 'course':
-      return `${base}视频课程可以先看目录，判断是否覆盖你本周要学的内容。`;
+      return `${session}视频课程可以先看目录，判断是否覆盖你本周要学的内容。`;
     case 'patent':
-      return `${base}专利检索按「技术特征 + 申请年」组合，先看同类专利的权利要求书。`;
+      return `${session}专利检索按「技术特征 + 申请年」组合，先看同类专利的权利要求书。`;
     case 'compute':
-      return `${base}算力/建模平台一般要申请额度，先在课程群里确认学校是否已开通。`;
+      return `${session}算力/建模平台一般要申请额度，先在课程群里确认学校是否已开通。`;
     default:
-      return base;
+      return session;
   }
 }
 
