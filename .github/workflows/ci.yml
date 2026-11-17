@@ -40,9 +40,20 @@ jobs:
         run: |
           set -o pipefail
           pnpm test 2>&1 | tee "$RUNNER_TEMP/test.log"
+          code=${PIPESTATUS[0]}
+          echo "pnpm test exit=$code" | tee -a "$RUNNER_TEMP/test.log"
+          exit $code
       - name: 失败时把关键行写成 annotation
         if: failure()
         shell: bash
         run: |
-          grep -nE '(FAIL |AssertionError|Error:|Timed out|timeout)' "$RUNNER_TEMP/test.log" | head -30 | sed 's/^/::error::/' || true
-          tail -n 40 "$RUNNER_TEMP/test.log" | sed 's/^/::error::/' || true
+          # GitHub 每个步骤最多展示 10 条 annotation，所以只发两条，把信息压进去。
+          # 日志带 ANSI 颜色码（vitest 把 "FAIL " 用转义序列包起来），先剥掉再匹配，
+          # 否则 grep 命中不到任何东西，只剩一堆 ✓ 行。
+          sed -E 's/\x1b\[[0-9;]*[a-zA-Z]//g' "$RUNNER_TEMP/test.log" > "$RUNNER_TEMP/plain.log"
+          hits=$(grep -naE '(FAIL |×|AssertionError|Error:|Unhandled|Rejection|Timed out|ELIFECYCLE|Command failed|worker|heap|ENOMEM|EPERM|EBUSY)' "$RUNNER_TEMP/plain.log" | tail -n 20 | paste -sd '|' -)
+          hits="${hits:0:3500}"; hits="${hits//'%'/'%25'}"
+          echo "::error::关键行（空＝测试全过但进程非零退出）：${hits:-无}"
+          tailed=$(tail -n 25 "$RUNNER_TEMP/plain.log" | paste -sd '|' -)
+          tailed="${tailed:0:3500}"; tailed="${tailed//'%'/'%25'}"
+          echo "::error::日志末尾 25 行：${tailed}"
