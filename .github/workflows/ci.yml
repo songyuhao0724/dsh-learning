@@ -19,11 +19,12 @@ jobs:
         os: [ubuntu-latest, windows-latest]
         node: [22, 24]
     steps:
-      - uses: actions/checkout@v4
-      # 不写 version：pnpm/action-setup@v4 会读 package.json 的 packageManager 字段。
+      - uses: actions/checkout@v7
+      # 不写 version：pnpm/action-setup 会读 package.json 的 packageManager 字段。
       # 两处都写会报 "Multiple versions of pnpm specified"（v0.1.0 的 CI 就是这么红的）。
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      # v6 起显式支持 pnpm 11，与根 package.json 的 packageManager 对齐。
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node }}
           cache: pnpm
