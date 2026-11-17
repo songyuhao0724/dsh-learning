@@ -33,4 +33,16 @@ jobs:
       # 包之间有 workspace 依赖，先 build 出 .d.ts 才能 typecheck 依赖方
       - run: pnpm build
       - run: pnpm typecheck
-      - run: pnpm test
+      # 测试输出同时落盘：失败时下面那步会把它变成 annotation，
+      # 这样不登录 Actions 页面、只读公开 API 也能看到失败的用例名。
+      - name: test
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm test 2>&1 | tee "$RUNNER_TEMP/test.log"
+      - name: 失败时把关键行写成 annotation
+        if: failure()
+        shell: bash
+        run: |
+          grep -nE '(FAIL |AssertionError|Error:|Timed out|timeout)' "$RUNNER_TEMP/test.log" | head -30 | sed 's/^/::error::/' || true
+          tail -n 40 "$RUNNER_TEMP/test.log" | sed 's/^/::error::/' || true
