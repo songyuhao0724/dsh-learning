@@ -12,6 +12,7 @@ import { registerAccessTools } from './tools/access.js';
 import { registerBioDataTools } from './tools/biodata.js';
 import { registerCareerTools } from './tools/career.js';
 import { registerPaperTools } from './tools/papers.js';
+import { registerProfileTools } from './tools/profile.js';
 import { registerRadarTools } from './tools/radar.js';
 import type { PluginContext, PluginFetch, ToolsConfig } from './types.js';
 
@@ -35,7 +36,15 @@ export function apply(ctx: PluginContext, config?: ToolsConfig): void {
   registerCareerTools(ctx, settings);
   registerRadarTools(ctx, settings);
   registerBioDataTools(ctx, settings);
+  registerProfileTools(ctx, settings);
 }
 
 export type { PluginContext, PluginFetch, ToolDefinitionLike, ToolExec, ToolsConfig } from './types.js';
-export { registerAccessTools, registerBioDataTools, registerCareerTools, registerPaperTools, registerRadarTools };
+export {
+  registerAccessTools,
+  registerBioDataTools,
+  registerCareerTools,
+  registerPaperTools,
+  registerProfileTools,
+  registerRadarTools,
+};

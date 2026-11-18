@@ -34,7 +34,7 @@
 
 ### 方式 B：只装工具，不要人格
 
-只装 `packages/learning-tools`，然后在任意预设里使用下面 14 个 `study_*` 工具。
+只装 `packages/learning-tools`，然后在任意预设里使用下面 18 个 `study_*` 工具。
 
 > 工具默认挂在 profile 顶层，所以**所有预设**都能看到它们。只想给「知航」用，
 > 就把 `packages/learning-tools/cordis.patch.yml` 里那一行搬进
@@ -44,8 +44,26 @@
 
 ## 2. 第一次使用：建档案 + 建索引
 
-「知航」开工前会先找工作区里的 `学习档案/个人档案.md`；没有就问你 6 个问题并建档。
-档案包含：学校专业年级、毕业打算、当前最想解决的一件事、每周可投入时间、最担心的短板。
+「知航」开工前会先调 `study_profile_status` 读工作区的结构化档案
+`学习档案/个人档案.json`（23 个字段 / 4 组）。必填没齐时它**一次只问一个问题**，
+答一条存一条；不会再一口气抛六个问题。
+
+### 2.1 三种建档方式，任选
+
+| 方式 | 怎么做 | 适合 |
+|---|---|---|
+| 对话式 | 直接跟知航说话，它按 `nextQuestions` 逐个问 | 懒人，边聊边填 |
+| 可视化引导页 | 说「给我个引导页」或直接调 `study_profile_wizard`，双击生成的 `学习档案/初始化向导.html` 填写 | 想一次看完所有字段、要看到进度条 |
+| 手工编辑 | 直接改 `学习档案/个人档案.json`（字段目录见 `packages/onboarding/src/schema.ts`） | 想批量粘贴 |
+
+引导页填完点「下载 个人档案.json」，覆盖 `学习档案/个人档案.json` 即可；它同时会生成
+`个人档案.md` 供你肉眼检查。
+
+### 2.2 资源体检
+
+`study_resource_check` 检查五项：Zotero 数据库、Zotero 数据目录（要有 `storage/`）、
+本地索引库、联系邮箱（Unpaywall 要求）、CARSI 学校。每项给 `ok / warn / missing`
+和一句「怎么补」，所以开场就能知道你缺什么，而不是等到检索失败才发现。
 
 文献能力是**读你自己的 Zotero 库**，所以先确认两件事：
 
@@ -90,6 +108,7 @@ config:
 
 新建一个会话，选「知航」，问：
 
+- **只看它开不开场**：什么都不说，第一句就该是「档案完整度 N%，还差 X / 资源哪项没配」这种话 → 触发 `study_profile_status` + `study_resource_check`
 - 「你能查我 Zotero 库里有哪些文献吗？」→ 应触发 `study_papers_summary`
 - 「帮我把『脑卒中 深度学习』翻译成 PubMed 检索式」→ 应触发 `study_search_formula`
 - 「按医疗健康大数据方向给我一份四年计划」→ 应触发 `study_career_plan`
@@ -130,3 +149,7 @@ plugin_manager remove_bundle(target="@dsh-learning/preset-zhihang")
 | 查不到开放获取全文 | 这篇论文本来就没有 OA 版本 | 这很正常：工具会给学校 CARSI 资源建议，不会替你绕付费墙 |
 | 雷达里 arXiv 一直是 0 条 + 「arXiv 抓取失败」 | 校园网或代理拦住了 `export.arxiv.org` | 换网络（手机热点）再试；其它源不受影响 |
 | `study_bio_data_search` 报「没有可用的 fetch」 | 运行环境没有全局 `fetch`（Node < 18 或旧 Electron） | 升级 DSH；或在插件配置里注入 fetch |
+| 知航开场不读档案、直接问「你是谁」 | 会话不是「知航」预设（用别的预设时没有这段 persona） | 新建会话选「知航」；或把 `packages/learning-tools` 装成 profile 级插件后手动说「看下我的档案」 |
+| 档案改了但知航还用旧信息 | 档案在 `学习档案/个人档案.json`，工具每次重新读；旧信息来自会话上下文 | 开新会话，或让它重跑一次 `study_profile_status` |
+| 引导页填写后进度不动 | 页面用了 `localStorage` 草稿，被浏览器隐私模式禁用 | 换普通窗口打开；或直接手工编辑 json |
+| 引导页下载的 json 覆盖后字段没生效 | 覆盖到了别的目录（比如 `AI伴学助手/`） | 确认路径是 `<工作区>/学习档案/个人档案.json` |

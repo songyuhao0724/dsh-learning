@@ -38,12 +38,17 @@ importers:
       '@dsh-learning/carsi-router':
         specifier: workspace:*
         version: link:../carsi-router
+      '@dsh-learning/onboarding':
+        specifier: workspace:*
+        version: link:../onboarding
       '@dsh-learning/paper-radar':
         specifier: workspace:*
         version: link:../paper-radar
       '@dsh-learning/scholar':
         specifier: workspace:*
         version: link:../scholar
+
+  packages/onboarding: {}
 
   packages/paper-radar: {}
 

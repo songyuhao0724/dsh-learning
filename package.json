@@ -1,6 +1,6 @@
 {
   "name": "dsh-learning",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "description": "A student-facing AI learning system for DeepSeek Harness: career planning, coursework, and academic research in one agent preset.",

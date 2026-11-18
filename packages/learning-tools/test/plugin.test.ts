@@ -1,7 +1,7 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, describe, expect, it } from 'vitest';
 import { buildTextPdf } from '../../scholar/test/fixtures/make-pdf.js';
 import { apply } from '../src/index.js';
 import type { PluginFetch, ToolDefinitionLike } from '../src/types.js';
@@ -59,11 +59,9 @@ function fakeContext(): { tools: Map<string, ToolDefinitionLike>; ctx: { tools: 
   };
 }
 
-let workspace: string;
-
-beforeAll(() => {
-  workspace = mkdtempSync(join(tmpdir(), 'dsh-learning-tools-'));
-});
+// 注意：必须在这里（describe 收集阶段）就建好目录——describe 的回调早于 beforeAll 执行，
+// 而 apply() 在回调里就跑，拿不到 beforeAll 里的 workspace 会退回 cwd。
+const workspace = mkdtempSync(join(tmpdir(), 'dsh-learning-tools-'));
 
 afterAll(() => {
   rmSync(workspace, { recursive: true, force: true });
@@ -85,10 +83,10 @@ function renderText(tools: Map<string, ToolDefinitionLike>, name: string, value:
 
 describe('learning-tools 插件', () => {
   const { tools, ctx } = fakeContext();
-  apply(ctx, { fetch: offlineFetch() });
+  apply(ctx, { fetch: offlineFetch(), workspaceDir: workspace });
 
-  it('注册了 14 个工具，名字都以 study_ 开头且不重复', () => {
-    expect(tools.size).toBe(14);
+  it('注册了 18 个工具，名字都以 study_ 开头且不重复', () => {
+    expect(tools.size).toBe(18);
     for (const name of tools.keys()) expect(name.startsWith('study_')).toBe(true);
   });
 
@@ -206,5 +204,66 @@ describe('learning-tools 插件', () => {
   it('缺参数时抛出能照着做的中文错误', async () => {
     await expect(call(tools, 'study_papers_search', { query: 'x' })).rejects.toThrow(/indexPath/);
     await expect(call(tools, 'study_career_plan', { degree: '考研' })).rejects.toThrow(/direction/);
+  });
+
+  it('档案工具：空档案 → 保存 → 完整度上升、md 落盘', async () => {
+    const before = (await call(tools, 'study_profile_status', {})) as {
+      completion: number;
+      requiredTotal: number;
+      missing: Array<{ label: string }>;
+      nextQuestions: string[];
+    };
+    expect(before.completion).toBe(0);
+    expect(before.requiredTotal).toBeGreaterThanOrEqual(8);
+    expect(before.missing.length).toBe(before.requiredTotal);
+    expect(before.nextQuestions).toHaveLength(3);
+    expect(renderText(tools, 'study_profile_status', before)).toContain('档案完整度');
+
+    const saved = (await call(tools, 'study_profile_save', {
+      updates: { name: '宋宇昊', school: '康复大学', grade: '2026 级 本科' },
+      milestones: ['2026-11-18 首次建立档案'],
+    })) as { changed: string[]; completion: number; files: { markdown: string } };
+    expect(saved.changed.sort()).toEqual(['grade', 'name', 'school']);
+    expect(saved.completion).toBeGreaterThan(0);
+
+    const after = (await call(tools, 'study_profile_status', {})) as { summary: string; completion: number };
+    expect(after.summary).toContain('宋宇昊');
+    expect(after.completion).toBeGreaterThan(0);
+  });
+
+  it('档案工具：未知字段会被明确忽略而不是静默吞掉', async () => {
+    const result = (await call(tools, 'study_profile_save', {
+      updates: { nickname: '小宋' },
+    })) as { changed: string[]; ignored: string[] };
+    expect(result.changed).toEqual([]);
+    expect(result.ignored).toContain('nickname');
+    const rendered = renderText(tools, 'study_profile_save', result);
+    expect(rendered).toContain('已忽略');
+  });
+
+  it('资源体检工具给出五类检查与补救建议', async () => {
+    const report = (await call(tools, 'study_resource_check', {})) as {
+      items: Array<{ key: string; status: string; fix?: string }>;
+      headline: string;
+    };
+    expect(report.items).toHaveLength(5);
+    expect(report.items.map((item) => item.key)).toContain('zoteroDbPath');
+    expect(report.headline).toMatch(/就绪|待完善|缺失/);
+    expect(report.items.some((item) => item.fix !== undefined)).toBe(true);
+  });
+
+  it('引导页工具会落一个能双击打开的 HTML', async () => {
+    const result = (await call(tools, 'study_profile_wizard', {})) as {
+      path: string;
+      bytes: number;
+      completion: number;
+    };
+    expect(result.path.endsWith('初始化向导.html')).toBe(true);
+    expect(result.bytes).toBeGreaterThan(4000);
+    const html = readFileSync(result.path, 'utf8');
+    expect(html.startsWith('<!DOCTYPE html>')).toBe(true);
+    expect(html).toContain('id="wizard-data"');
+    expect(html).toContain('初始化向导');
+    expect(renderText(tools, 'study_profile_wizard', result)).toContain('双击');
   });
 });

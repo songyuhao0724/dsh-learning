@@ -1,0 +1,27 @@
+{
+  "name": "@dsh-learning/onboarding",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "知航的身份初始化：个人档案 schema、完整度诊断、资源体检与引导式可视化向导",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  }
+}

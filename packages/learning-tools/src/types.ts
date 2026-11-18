@@ -45,6 +45,8 @@ export interface ToolsConfig {
   zoteroDataDir?: string;
   indexDbPath?: string;
   contactEmail?: string;
+  /** 工作区目录：档案（学习档案/）默认读它；单次调用可用 workspaceDir 覆盖。 */
+  workspaceDir?: string;
   /** 注入用：测试里换成假 fetch；生产环境由 apply() 兜底成 globalThis.fetch。 */
   fetch?: PluginFetch;
 }

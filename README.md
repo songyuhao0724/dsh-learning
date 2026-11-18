@@ -21,7 +21,8 @@
 | **career** | 做一次测评、填一次档案 | 生成职业画像、四年路线与可验收的行动计划 |
 | **paper-radar** | 说一句「我想要 XX 方向的热点」 | 抓 arXiv/bioRxiv/medRxiv/PubMed → 主题打标 → 输出 AIHOT `json_list` 信源 |
 | **bio-data** | 问「GEO 里有没有 XX 的数据」 | 走 NCBI E-utilities 取 GEO / SRA 元数据；国内平台给门户深链 |
-| **learning-tools** | 什么都不用做 | 把上面五个库变成 14 个 `study_*` 工具，装进任意 DSH 会话 |
+| **onboarding** | 第一次用的时候填一遍档案 | 结构化个人档案（23 个字段 / 4 组）+ 资源体检 + 单文件引导页 `初始化向导.html` |
+| **learning-tools** | 什么都不用做 | 把上面六个库变成 18 个 `study_*` 工具，装进任意 DSH 会话 |
 
 ### 14 个工具
 
@@ -32,6 +33,7 @@
 | 职业 | `study_career_occupations`、`study_career_match`、`study_career_jd`、`study_career_gap`、`study_career_plan` |
 | 热点 | `study_papers_radar` |
 | 科研数据 | `study_bio_data_search` |
+| 档案与初始化 | `study_profile_status`、`study_profile_save`、`study_resource_check`、`study_profile_wizard` |
 
 ---
 
@@ -54,7 +56,21 @@ pnpm build
 
 **B. 只要工具**（不动你现有的预设）：安装 **`packages/learning-tools` 的绝对路径**。它是一行 profile 级插件，装完所有预设都能用。
 
-第一次对话时「知航」会问你 6 个问题建立 `学习档案/个人档案.md`——这是它认识你的起点。详细步骤、配置项、故障排查见 **[docs/integration.md](./docs/integration.md)**。
+第一次对话时，知航**不会先问你六个问题**，而是先读档案再决定说什么（见下节）。
+
+---
+
+## 知航为什么「主动」（v0.2.0）
+
+普通问答助手每次都要你重新交代背景。知航的做法是把「认识你」这件事做成三个可执行动作：
+
+**1. 结构化档案，而不是一段散文。** 档案在 `<工作区>/学习档案/个人档案.json`（23 个字段 / 4 组：我是谁、我要去哪、我怎么配合、我的资源在哪），由工具读写，同时生成一份给人看的 `个人档案.md`。字段有必填标记，因此「还差什么」是可计算的，不是靠模型自己回忆。
+
+**2. 开场协议写进 persona。** 每次新会话、回答第一句话之前：先 `study_profile_status` → 必填没齐就用它的 `nextQuestions[0]` **一次只问一个问题**，答一条存一条 → 再 `study_resource_check` 报资源缺口（Zotero 库、数据目录、索引库、邮箱、CARSI 学校）→ 档案里有 `nextDeadline` 就提醒一行。开场不超过 5 行。
+
+**3. 不想填的时候有可视化引导。** `study_profile_wizard` 生成单文件 `学习档案/初始化向导.html`：左侧 4 组表单、右侧实时 Markdown/JSON 预览、右上角环形进度（必填完成度）、下方资源体检，填完可下载 json 直接覆盖档案。页面纯静态、离线可开，草稿存 `localStorage`。
+
+回写也是一条硬规则：你说过的长期信息、有节点意义的事（交作业、定方向、考完试）都会当场写回档案，所以越用越准。
 
 ---
 
@@ -103,7 +119,8 @@ dsh-learning/
 │   ├── career/           # RIASEC 画像 + 12 个岗位 + JD 解析 + 四年路线
 │   ├── paper-radar/      # 热点论文雷达 → AIHOT 信源，CLI: dsh-radar
 │   ├── bio-data/         # GEO / SRA 检索 + 国内平台深链
-│   └── learning-tools/   # 14 个 study_* 工具的 DSH 插件壳
+│   ├── onboarding/       # 结构化档案 + 资源体检 + 单文件引导页
+│   └── learning-tools/   # 18 个 study_* 工具的 DSH 插件壳
 ├── docs/
 │   ├── architecture.md   # 架构、数据流、验收标准
 │   ├── integration.md    # 安装、配置、验证、故障排查
@@ -126,6 +143,7 @@ dsh-learning/
 | **M4** | career：RIASEC + 12 岗位 + JD 解析 + 技能差距 + 四年路线 | ✅ |
 | **M5** | paper-radar（AIHOT `json_list`）+ bio-data + 14 个工具装进 DSH | ✅ |
 | **M6** | 文档、演示、v0.1.0 发版 | ✅ |
+| **M7** | 知航主动化：结构化档案 + 资源体检 + 引导页 + 开场协议（v0.2.0） | ✅ |
 
 `pnpm check` = 预设校验 + 全量构建 + 类型检查 + **154 个测试**。
 

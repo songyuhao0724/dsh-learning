@@ -126,12 +126,31 @@ study_bio_data_search(source, term)
 
 SRA 的 `esummary` 只返回一个 `expxml` 字符串（`<Study acc="SRP…"/><Organism ScientificName="…"/><Runs><Run …/>`），没有结构化字段，所以按标签取 accession / 标题 / 物种 / Run 数。CNGBdb / CNSA / GSA 的检索接口要申请授权、页面要登录态，**抓取不稳定也不合规**，所以只给深链。
 
+### 3.6 onboarding（知航怎么「先认识你」）
+
+```
+            ┌──────────── 每次新会话，回答第一句之前 ────────────┐
+用户工作区  │ study_profile_status → 完成度 / nextQuestions       │
+学习档案/   │ study_resource_check → ok|warn|missing + 怎么补      │
+个人档案.json│ 必填没齐：nextQuestions[0] 一次一个问题，答即存      │
+个人档案.md  │ 有 nextDeadline：一行提醒                          │
+初始化向导.html│ 用户说不会填：study_profile_wizard 出引导页        │
+            └──────────────────────────────────────────────────┘
+```
+
+三个刻意的设计：
+
+1. **档案是数据，不是散文。** 23 个字段带 `required` 标记，所以「还差什么」是算出来的（`profileStatus()`），不是让模型回忆。这也是为什么引导页的进度条可信。
+2. **主动有边界。** 开场最多 5 行、一次只问一个问题、同一天不重复同一句提醒——「主动」不等于刷屏。提醒的触发条件全部来自档案字段（`nextDeadline` / 资源 `missing`），而不是模型心情。
+3. **写回是硬规则。** 用户说的长期信息必须 `study_profile_save` 落盘；否则下一轮又得重新问，个性化就归零。里程碑由工具合并保留，不会因为重写档案而丢历史。
+
 ## 4. 存储
 
 | 内容 | 位置 | 说明 |
 |---|---|---|
 | 索引库 | `<profile 数据目录>/dsh-learning/scholar.db` | FTS5，可删可重建 |
-| 个人档案 | 用户工作区 `学习档案/个人档案.md` | 纯 Markdown，用户可手改 |
+| 个人档案 | 用户工作区 `学习档案/个人档案.json`（+ `.md` 镜像、`初始化向导.html`） | 结构化，工具读写；用户也可手改 |
+| 引导页草稿 | 浏览器 `localStorage: zhihang-profile-draft-v1` | 只在用户机器上，不上传 |
 | 资源画像 | 仓库 `data/carsi-resources.seed.json` + 用户可覆盖的本地副本 | 学校买的库因人而异 |
 | 缓存 | `os.tmpdir()/dsh-learning/` | 元数据缓存，带 TTL |
 

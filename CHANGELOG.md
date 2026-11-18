@@ -3,6 +3,36 @@
 本项目的所有重要变更都记录在这里。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.2.0] - 2026-11-18
+
+知航从「你说什么我做什么」变成「先弄清你是谁，再决定说什么」：结构化档案 + 资源体检 + 可视化引导页 + 写进 persona 的开场协议。
+
+### 新增
+
+- **新包 `@dsh-learning/onboarding`**（无运行时依赖）：23 个字段 / 4 组（我是谁、我要去哪、
+  我怎么配合、我的资源在哪）的结构化档案 schema；`profileStatus()` 把「还差什么」变成可计算的
+  完成度与 `nextQuestions`；`saveProfile()` 合并式写入（答一条存一条，未知键进 `ignored`，
+  同时产出 `个人档案.json` 与给人看的 `个人档案.md`，里程碑跨次保留）。
+- **`checkResources()` 资源体检**：Zotero 数据库、Zotero 数据目录（有无 `storage/`）、
+  本地索引库、联系邮箱、CARSI 学校五项，各给 `ok / warn / missing` 与一句「怎么补」。
+- **`renderWizardHtml()` 单文件引导页**：4 组表单 + 实时 Markdown/JSON 预览 + 环形必填进度 +
+  资源体检列表 + 下载 json/md、复制「发给知航」、草稿存 `localStorage`。纯静态、离线可开、
+  内嵌 JSON 做了 `</script>` 转义。
+- **4 个新工具**（14 → 18）：`study_profile_status`、`study_profile_save`、
+  `study_resource_check`、`study_profile_wizard`。
+- **知航 persona 的「开场协议」**：新会话第一句话之前先 `study_profile_status`；必填没齐就按
+  `nextQuestions[0]` 一次只问一个问题、答一条存一条；然后 `study_resource_check` 报资源缺口；
+  档案里有 `nextDeadline` 就提醒一行；用户说「不会填」时给引导页。开场不超过 5 行。
+- `ToolsConfig.workspaceDir`：档案默认从工作区读，单次调用可覆盖。
+
+### 修复
+
+- 引导页内嵌 JSON 未转义 → 用户输入含 `</script>` 会截断脚本块。
+- `questionFor()` 对 select 字段不给选项 → 追问时补上「可选项：…」。
+- 资源体检体积只按 KB 显示 → `formatSize()` 超过 1 MB 用 MB。
+- learning-tools 测试的临时工作区在 `describe` 收集阶段还没建好，导致档案被写进包目录
+  （`completion` 断言得到 30 而不是 0）→ 改为模块顶层创建。
+
 ## [0.1.2] - 2026-11-17
 
 资源目录从「门户条目」扩到「学校实际在订的库」，并给每一条标注了无登录实测的可达性。
