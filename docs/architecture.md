@@ -76,7 +76,7 @@ Crossref/OpenAlex 取元数据 → 得到期刊、年份、ISSN
   ▼
 Unpaywall/Europe PMC 查 OA 状态 → 有合法 OA 版本？→ 给 OA 链接
   ▼ 否则
-匹配本地资源画像（data/carsi-resources.seed.json：我校买了哪些库、覆盖哪些年份）
+匹配内置资源画像（`packages/carsi-router/src/data/carsi-resources.ts`，25 条：我校买了哪些库、每条要不要登录、入口在哪）
   ▼
 输出：{ 可得性: oa | subscribed | trial | unavailable,
         入口: <数据库深链>, 说明: "Springer 校购覆盖 1997-至今" }
@@ -185,7 +185,7 @@ study_feeds_search(query?, since?, sourceIds?, topics?, domainOnly?)
 | 资讯方向 | 用户工作区 `学习档案/资讯方向.json` | 主题/关键词/排除词/评分备注，模型写、用户可手改 |
 | 资讯库 | 用户工作区 `学习档案/资讯.db` | `node:sqlite` 一张 `feed_items` 表；可删可重建，删了重抓即恢复 |
 | 引导页草稿 | 浏览器 `localStorage: zhihang-profile-draft-v1` | 只在用户机器上，不上传 |
-| 资源画像 | 仓库 `data/carsi-resources.seed.json` + 用户可覆盖的本地副本 | 学校买的库因人而异 |
+| 资源画像 | 仓库 `packages/carsi-router/src/data/carsi-resources.ts`（25 条，按我校订购清单核对） | 学校买的库因人而异 |
 | 缓存 | `os.tmpdir()/dsh-learning/` | 元数据缓存，带 TTL |
 
 ## 5. 技术选型与理由
