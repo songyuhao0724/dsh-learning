@@ -11,7 +11,7 @@
 
 ---
 
-## 七个包，一件事
+## 八个包，一件事
 
 | 包 | 你做的事 | 它做的事 |
 |---|---|---|
@@ -21,10 +21,11 @@
 | **career** | 做一次测评、填一次档案 | 生成职业画像、四年路线与可验收的行动计划 |
 | **paper-radar** | 说一句「我想要 XX 方向的热点」 | 抓 arXiv/bioRxiv/medRxiv/PubMed → 主题打标 → 输出 AIHOT `json_list` 信源 |
 | **bio-data** | 问「GEO 里有没有 XX 的数据」 | 走 NCBI E-utilities 取 GEO / SRA 元数据；国内平台给门户深链 |
-| **onboarding** | 第一次用的时候填一遍档案 | 结构化个人档案（23 个字段 / 4 组）+ 资源体检 + 单文件引导页 `初始化向导.html` |
-| **learning-tools** | 什么都不用做 | 把上面六个库变成 18 个 `study_*` 工具，装进任意 DSH 会话 |
+| **feeds** | 说一句「有什么新进展」 | 抓 27 个外国免费信源（期刊/预印本/厂商/机构/媒体/社区）→ 入本地 SQLite → 按你的方向检索，CLI: `dsh-feeds` |
+| **onboarding** | 第一次用的时候填一遍档案 | 结构化个人档案（25 个字段 / 5 组）+ 资源体检 + 单文件引导页 `初始化向导.html` |
+| **learning-tools** | 什么都不用做 | 把上面七个库变成 23 个 `study_*` 工具，装进任意 DSH 会话 |
 
-### 14 个工具
+### 23 个工具
 
 | 组 | 工具 |
 |---|---|
@@ -34,6 +35,7 @@
 | 热点 | `study_papers_radar` |
 | 科研数据 | `study_bio_data_search` |
 | 档案与初始化 | `study_profile_status`、`study_profile_save`、`study_resource_check`、`study_profile_wizard` |
+| 资讯 | `study_news`、`study_feeds_refresh`、`study_feeds_search`、`study_feeds_sources`、`study_news_domain_save` |
 
 ---
 
@@ -71,6 +73,23 @@ pnpm build
 **3. 不想填的时候有可视化引导。** `study_profile_wizard` 生成单文件 `学习档案/初始化向导.html`：左侧 4 组表单、右侧实时 Markdown/JSON 预览、右上角环形进度（必填完成度）、下方资源体检，填完可下载 json 直接覆盖档案。页面纯静态、离线可开，草稿存 `localStorage`。
 
 回写也是一条硬规则：你说过的长期信息、有节点意义的事（交作业、定方向、考完试）都会当场写回档案，所以越用越准。
+
+---
+
+## 内置资讯雷达（v0.3.0）
+
+学校买了什么库，很大程度上决定你能看到什么。但**外国期刊的目次、预印本、厂商博客、研究机构动态，本来就是免费公开的**——缺的不是订阅，是一个替你筛、替你翻、替你盯的人。v0.3.0 把这件事内置进来：
+
+**两档数据源，自己选。**
+
+- **有 AIHOT 实例**（自托管的 AI 热点站，见下节）：`study_news` 直接读它已经筛过、翻成中文的条目，省一次 LLM 调用。
+- **没有也能跑**：`study_feeds_refresh` 抓内置 27 个源入本地 SQLite（`学习档案/资讯.db`），`study_feeds_search` 按关键词 / 时间窗 / 源 / 主题检索，`study_feeds_sources` 列清单。零运行时依赖、零外部服务。
+
+**27 个源，六类**：期刊（PLOS Comp Biol、Nature Methods、Nature Biotech、Cell Genomics）、预印本（bioRxiv）、厂商官方（OpenAI、DeepMind、Google Research、HF、MSR、NVIDIA、AWS、GitHub、Mistral）、研究机构（BAIR）、媒体（The Verge、TechCrunch、Ars Technica、MIT TR、The Decoder、GEN）、社区（Simon Willison、Import AI、Latent Space、R-bloggers、Loman Lab、Haldane's Sieve）。全部英文、全部免费、全部公开。
+
+**方向是写下来的，不是每轮现编的。** 初始化时问一句「要不要盯外国资讯」，要就让模型按你的专业重写口径（主题、英文关键词、排除词、评分备注），存 `学习档案/资讯方向.json`；之后检索带 `domainOnly` 就按方向打分排序（标题命中 +3、主题标签 +2、摘要 +1），改方向一次就够。这就是「模型做提示词重写」在知航里的落点——不是改代码，是写一个可读的 JSON。
+
+诚实说明两点：bioRxiv 与部分站点对爬虫 UA 有 Cloudflare 拦截，抓不到就如实报错（不伪造条目）；`study_news` 那种「精选/翻译」质量来自 AIHOT 的提示词资产，本仓库只复用它的接口，不复制它的模型调用。
 
 ---
 
@@ -119,8 +138,9 @@ dsh-learning/
 │   ├── career/           # RIASEC 画像 + 12 个岗位 + JD 解析 + 四年路线
 │   ├── paper-radar/      # 热点论文雷达 → AIHOT 信源，CLI: dsh-radar
 │   ├── bio-data/         # GEO / SRA 检索 + 国内平台深链
+│   ├── feeds/            # 27 个外国免费信源 → 本地 SQLite → 按方向检索，CLI: dsh-feeds
 │   ├── onboarding/       # 结构化档案 + 资源体检 + 单文件引导页
-│   └── learning-tools/   # 18 个 study_* 工具的 DSH 插件壳
+│   └── learning-tools/   # 23 个 study_* 工具的 DSH 插件壳
 ├── docs/
 │   ├── architecture.md   # 架构、数据流、验收标准
 │   ├── integration.md    # 安装、配置、验证、故障排查
@@ -144,8 +164,9 @@ dsh-learning/
 | **M5** | paper-radar（AIHOT `json_list`）+ bio-data + 14 个工具装进 DSH | ✅ |
 | **M6** | 文档、演示、v0.1.0 发版 | ✅ |
 | **M7** | 知航主动化：结构化档案 + 资源体检 + 引导页 + 开场协议（v0.2.0） | ✅ |
+| **M8** | 内置资讯：27 个免费信源 + 方向口径 + 5 个工具，接 AIHOT 或独立跑（v0.3.0） | ✅ |
 
-`pnpm check` = 预设校验 + 全量构建 + 类型检查 + **154 个测试**。
+`pnpm check` = 预设校验 + 全量构建 + 类型检查 + **196 个测试**。
 
 ---
 
@@ -154,6 +175,7 @@ dsh-learning/
 - **中文分词/检索**：重叠二元组 + SQLite **FTS5**（Node 内置 `node:sqlite`，零原生依赖）；向量检索是可选扩展，不需要 embedding 也能用。
 - **PDF 抽取**：`unpdf`（pdfjs 的纯 JS 封装，钉 1.9.x 以兼容 Node 22）。
 - **Zotero**：直接只读 `zotero.sqlite`（被锁时读副本），不装 Zotero 插件、不改它的数据。
+- **资讯抓取**：自写极简 RSS/Atom 解析（正则切条 + 实体解码 + CDATA 还原），不引第三方 XML 库；条目没有 `guid`/`link` 时用「源 + 标题哈希」生成稳定 id，重抓不会重复入库。
 - **不引入重型全栈**：没有 Flask / FastAPI / PostgreSQL / Docker——这些包跑在 DSH 进程里，或者作为 CLI。
 
 ---

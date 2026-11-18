@@ -1,6 +1,6 @@
 {
   "name": "@dsh-learning/onboarding",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "description": "知航的身份初始化：个人档案 schema、完整度诊断、资源体检与引导式可视化向导",

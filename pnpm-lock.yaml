@@ -27,6 +27,8 @@ importers:
 
   packages/carsi-router: {}
 
+  packages/feeds: {}
+
   packages/learning-tools:
     dependencies:
       '@dsh-learning/bio-data':
@@ -38,6 +40,9 @@ importers:
       '@dsh-learning/carsi-router':
         specifier: workspace:*
         version: link:../carsi-router
+      '@dsh-learning/feeds':
+        specifier: workspace:*
+        version: link:../feeds
       '@dsh-learning/onboarding':
         specifier: workspace:*
         version: link:../onboarding

@@ -6,9 +6,26 @@ import { buildTextPdf } from '../../scholar/test/fixtures/make-pdf.js';
 import { apply } from '../src/index.js';
 import type { PluginFetch, ToolDefinitionLike } from '../src/types.js';
 
-/** 离线 fetch：雷达与科研数据工具都不该在测试里打真网络。 */
+/** 离线 fetch：雷达、科研数据、资讯抓取都不该在测试里打真网络。 */
 function offlineFetch(): PluginFetch {
   const arxiv = `<?xml version="1.0"?><feed xmlns="http://www.w3.org/2005/Atom"><entry><id>http://arxiv.org/abs/2601.01234v1</id><published>2026-01-05T00:00:00Z</published><title>Deep learning for medical imaging</title><summary>Review of medical imaging models.</summary><author><name>Ada</name></author></entry></feed>`;
+  const atomFeed = `<?xml version="1.0"?><feed xmlns="http://www.w3.org/2005/Atom"><entry><id>tag:plos.org,2026:1</id><title type="html">Single-cell atlas of lung cancer</title><link rel="alternate" href="https://journals.plos.org/ploscompbiol/article?id=1"/><published>2026-11-16T14:00:00Z</published><updated>2026-11-16T14:00:00Z</updated><summary type="html">&lt;p&gt;We profiled 40 patients with scRNA-seq.&lt;/p&gt;</summary></entry><entry><id>tag:plos.org,2026:2</id><title>CRISPR screen in T cells</title><link rel="alternate" href="https://journals.plos.org/ploscompbiol/article?id=2"/><published>2026-11-15T10:00:00Z</published><summary>Pooled guide library.</summary></entry></feed>`;
+  const aihotItems = {
+    schemaVersion: 1,
+    items: [
+      {
+        id: 'it1',
+        title: 'DeepMind 发布 Gemini 4 Carbon',
+        summary: '模型在长上下文上提升明显。',
+        source: { name: 'Google DeepMind' },
+        links: { aihot: 'http://localhost:3000/items/it1', original: 'https://deepmind.google/x' },
+        publishedAt: '2026-11-16T09:00:00.000Z',
+        category: 'ai-products',
+        score: 92,
+        selected: true,
+      },
+    ],
+  };
   const geoSearch = { esearchresult: { count: '1', idlist: ['200349653'] } };
   const geoSummary = {
     result: {
@@ -29,6 +46,12 @@ function offlineFetch(): PluginFetch {
   return async (input) => {
     if (input.startsWith('https://export.arxiv.org')) {
       return { ok: true, status: 200, text: async () => arxiv, json: async () => ({}) };
+    }
+    if (input.startsWith('https://journals.plos.org')) {
+      return { ok: true, status: 200, text: async () => atomFeed, json: async () => ({}) };
+    }
+    if (input.includes('/api/v1/items')) {
+      return { ok: true, status: 200, text: async () => JSON.stringify(aihotItems), json: async () => aihotItems };
     }
     if (input.startsWith('https://api.biorxiv.org')) {
       return { ok: true, status: 200, text: async () => '', json: async () => ({ collection: [] }) };
@@ -85,8 +108,8 @@ describe('learning-tools 插件', () => {
   const { tools, ctx } = fakeContext();
   apply(ctx, { fetch: offlineFetch(), workspaceDir: workspace });
 
-  it('注册了 18 个工具，名字都以 study_ 开头且不重复', () => {
-    expect(tools.size).toBe(18);
+  it('注册了 23 个工具，名字都以 study_ 开头且不重复', () => {
+    expect(tools.size).toBe(23);
     for (const name of tools.keys()) expect(name.startsWith('study_')).toBe(true);
   });
 
@@ -265,5 +288,81 @@ describe('learning-tools 插件', () => {
     expect(html).toContain('id="wizard-data"');
     expect(html).toContain('初始化向导');
     expect(renderText(tools, 'study_profile_wizard', result)).toContain('双击');
+  });
+
+  it('资讯源工具列出内置 27 个源、6 个分组', async () => {
+    const value = (await call(tools, 'study_feeds_sources', {})) as {
+      count: number;
+      groups: Array<{ group: string; sources: Array<{ id: string; name: string }> }>;
+    };
+    expect(value.count).toBe(27);
+    expect(value.groups).toHaveLength(6);
+    expect(value.groups.map((group) => group.group)).toContain('预印本');
+    const ids = value.groups.flatMap((group) => group.sources.map((source) => source.id));
+    expect(ids).toContain('plos-compbiol');
+    expect(ids).toContain('simon-willison');
+    expect(renderText(tools, 'study_feeds_sources', value)).toContain('plos-compbiol');
+  });
+
+  it('资讯抓取工具只抓指定源，入库后可检索', async () => {
+    const refreshed = (await call(tools, 'study_feeds_refresh', { sources: ['plos-compbiol'] })) as {
+      db: string;
+      report: { added: number; failed: number };
+      stats: { items: number };
+      unknown: string[];
+    };
+    expect(refreshed.unknown).toEqual([]);
+    expect(refreshed.report.added).toBe(2);
+    expect(refreshed.stats.items).toBe(2);
+    expect(renderText(tools, 'study_feeds_refresh', refreshed)).toContain('新增 2 条');
+
+    const found = (await call(tools, 'study_feeds_search', { query: 'crispr' })) as {
+      count: number;
+      items: Array<{ title: string; sourceId: string; domainScore: number }>;
+    };
+    expect(found.count).toBe(1);
+    expect(found.items[0]?.title).toContain('CRISPR');
+    expect(found.items[0]?.sourceId).toBe('plos-compbiol');
+    expect(renderText(tools, 'study_feeds_search', found)).toContain('CRISPR');
+  });
+
+  it('未知分组或未知源会给出可照着改的错误', async () => {
+    await expect(call(tools, 'study_feeds_refresh', { group: '不存在的组' })).rejects.toThrow(/这一组/);
+  });
+
+  it('资讯方向工具写盘后，检索会按方向加权', async () => {
+    const saved = (await call(tools, 'study_news_domain_save', {
+      topics: ['肿瘤'],
+      keywords: ['CRISPR', 'scRNA-seq'],
+      exclude: ['招聘'],
+      scoringNotes: '偏好方法学论文',
+    })) as { file: string; counts: { topics: number; keywords: number } };
+    expect(saved.counts.topics).toBe(1);
+    expect(saved.counts.keywords).toBe(2);
+    expect(saved.file.endsWith('资讯方向.json')).toBe(true);
+
+    const ranked = (await call(tools, 'study_feeds_search', { domainOnly: true })) as {
+      count: number;
+      domainReady: boolean;
+      items: Array<{ title: string; domainScore: number; domainHits: string[] }>;
+    };
+    expect(ranked.domainReady).toBe(true);
+    expect(ranked.count).toBeGreaterThan(0);
+    expect(ranked.items[0]?.domainScore).toBeGreaterThan(0);
+    expect(ranked.items[0]?.domainHits.length).toBeGreaterThan(0);
+  });
+
+  it('study_news 读 AIHOT 接口并给出可点的原文链接', async () => {
+    const value = (await call(tools, 'study_news', { mode: 'selected', window: '7d', limit: 5 })) as {
+      count: number;
+      items: Array<{ title: string; source: string; url: string; score: number }>;
+    };
+    expect(value.count).toBe(1);
+    expect(value.items[0]?.score).toBe(92);
+    expect(value.items[0]?.source).toBe('Google DeepMind');
+    expect(value.items[0]?.url).toContain('deepmind.google');
+    const rendered = renderText(tools, 'study_news', value);
+    expect(rendered).toContain('Gemini 4 Carbon');
+    expect(rendered).toContain('92');
   });
 });

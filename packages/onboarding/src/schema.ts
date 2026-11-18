@@ -8,6 +8,11 @@ import type { FieldSpec, GroupId, GroupSpec } from './types.js';
 
 export const GROUPS: readonly GroupSpec[] = [
   { id: 'identity', label: '我是谁', hint: '决定知航怎么称呼你、按哪个专业和年级给建议。' },
+  {
+    id: 'news',
+    label: '我要不要盯资讯',
+    hint: '决定知航要不要替你筛外国免费信源，以及按什么口径筛（不需要学校订阅）。',
+  },
   { id: 'goal', label: '我要去哪', hint: '决定推荐什么岗位、什么技能、什么节奏的路线。' },
   { id: 'preference', label: '我怎么配合', hint: '决定知航多久提醒一次、汇报多长、说话什么风格。' },
   { id: 'resource', label: '我的资源在哪', hint: '决定文献、全文、检索式这三件事能不能真的跑起来。' },
@@ -87,6 +92,26 @@ export const FIELDS: readonly FieldSpec[] = [
     kind: 'text',
     placeholder: '入党申请人',
     help: '涉及发展性测评、思想汇报时，知航会按这个节点提醒。',
+  },
+
+  // ── 我要不要盯资讯 ────────────────────────────────────────
+  {
+    key: 'newsInterest',
+    label: '要不要开资讯雷达',
+    group: 'news',
+    kind: 'select',
+    required: true,
+    options: ['要，帮我盯外国资讯', '先不要'],
+    help: '信源全部免费公开（期刊、预印本、厂商博客、媒体），不需要学校订阅；开了之后按你的专业方向筛英文资讯。',
+  },
+  {
+    key: 'newsTopics',
+    label: '想盯的资讯方向',
+    group: 'news',
+    kind: 'text',
+    placeholder: '基因组学、单细胞、医学影像 AI',
+    mdNote: '用「、」分隔',
+    help: '写了就按它筛；没写知航会先按你的专业拟一份方向给你确认（可改）。',
   },
 
   // ── 我要去哪 ──────────────────────────────────────────────

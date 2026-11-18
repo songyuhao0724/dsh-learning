@@ -11,7 +11,7 @@ export interface ProfileFile {
   values: Record<string, FieldValue>;
 }
 
-export type GroupId = 'identity' | 'goal' | 'preference' | 'resource';
+export type GroupId = 'identity' | 'news' | 'goal' | 'preference' | 'resource';
 
 export interface GroupSpec {
   id: GroupId;
@@ -76,4 +76,29 @@ export interface ResourceCheckReport {
   warnCount: number;
   missingCount: number;
   headline: string;
+}
+
+/**
+ * 资讯方向（`学习档案/资讯方向.json`）。
+ *
+ * 和 `个人档案.json` 分开存，因为它的性质不同：档案是用户逐条回答的事实，
+ * 资讯方向是模型按专业拟出来的「派生物」，可以随时重新生成、也应该让人手改。
+ */
+export interface NewsDomainProfile {
+  version: 1;
+  updatedAt: string;
+  /** 方向名，例如「基因组学」「医学影像 AI」。 */
+  topics: string[];
+  /** 匹配关键词，中英文都行（标题命中权重最高）。 */
+  keywords: string[];
+  /** 明确不关心的词，命中就降到末尾。 */
+  exclude: string[];
+  /** 一句话筛选口径，例如「只关心方法学突破，不关心融资新闻」。 */
+  scoringNotes?: string;
+}
+
+export interface SaveNewsDomainResult {
+  domain: NewsDomainProfile;
+  file: string;
+  counts: { topics: number; keywords: number; exclude: number };
 }

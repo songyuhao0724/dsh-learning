@@ -1,8 +1,9 @@
 /**
  * @dsh-learning/learning-tools
  *
- * 把五个包（scholar / carsi-router / career / paper-radar / bio-data）暴露成 DSH 工具：
- * 文献索引与带页码引用检索、全文可得性路由、检索式生成、岗位画像与四年计划、热点论文雷达、科研数据检索。
+ * 把六个包（scholar / carsi-router / career / paper-radar / bio-data / feeds）暴露成 DSH 工具：
+ * 文献索引与带页码引用检索、全文可得性路由、检索式生成、岗位画像与四年计划、热点论文雷达、
+ * 科研数据检索、外国免费资讯（AIHOT 实例或内置信源）。
  *
  * 这个包不 import 任何 `@deepseek-ai/*`：DSH 的 Loader 从 profile 根解析模块，
  * 第三方 link 包只有自己声明的依赖能被解析到，所以工具定义用最小结构的普通对象传给
@@ -11,6 +12,7 @@
 import { registerAccessTools } from './tools/access.js';
 import { registerBioDataTools } from './tools/biodata.js';
 import { registerCareerTools } from './tools/career.js';
+import { registerNewsTools } from './tools/news.js';
 import { registerPaperTools } from './tools/papers.js';
 import { registerProfileTools } from './tools/profile.js';
 import { registerRadarTools } from './tools/radar.js';
@@ -37,6 +39,7 @@ export function apply(ctx: PluginContext, config?: ToolsConfig): void {
   registerRadarTools(ctx, settings);
   registerBioDataTools(ctx, settings);
   registerProfileTools(ctx, settings);
+  registerNewsTools(ctx, settings);
 }
 
 export type { PluginContext, PluginFetch, ToolDefinitionLike, ToolExec, ToolsConfig } from './types.js';
@@ -44,6 +47,7 @@ export {
   registerAccessTools,
   registerBioDataTools,
   registerCareerTools,
+  registerNewsTools,
   registerPaperTools,
   registerProfileTools,
   registerRadarTools,

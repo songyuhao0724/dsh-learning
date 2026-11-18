@@ -38,6 +38,10 @@ DSH（DeepSeek Harness）提供的是一个**本地 agent 运行时**：模型�
                                 ▼
                         共享：ctx.services
                         （profile 目录、fs、子进程、日志）
+
+  onboarding（档案 + 资讯口径）与 feeds（27 个免费 RSS/Atom 源）
+  是两条旁路：onboarding 只写工作区里的 JSON，feeds 只写
+  学习档案/资讯.db，都不依赖网络之外的任何服务。
 ```
 
 **关键约束**：每个功能包都是独立的 Cordis 插件，可以单独启用/禁用/卸载。预设只是把它们「装配」到一起。这样用户可以只要 scholar 不要 career。
@@ -140,9 +144,37 @@ SRA 的 `esummary` 只返回一个 `expxml` 字符串（`<Study acc="SRP…"/><O
 
 三个刻意的设计：
 
-1. **档案是数据，不是散文。** 23 个字段带 `required` 标记，所以「还差什么」是算出来的（`profileStatus()`），不是让模型回忆。这也是为什么引导页的进度条可信。
+1. **档案是数据，不是散文。** 25 个字段 / 5 组带 `required` 标记，所以「还差什么」是算出来的（`profileStatus()`），不是让模型回忆。这也是为什么引导页的进度条可信。
 2. **主动有边界。** 开场最多 5 行、一次只问一个问题、同一天不重复同一句提醒——「主动」不等于刷屏。提醒的触发条件全部来自档案字段（`nextDeadline` / 资源 `missing`），而不是模型心情。
 3. **写回是硬规则。** 用户说的长期信息必须 `study_profile_save` 落盘；否则下一轮又得重新问，个性化就归零。里程碑由工具合并保留，不会因为重写档案而丢历史。
+
+### 3.7 feeds（外国免费资讯）
+
+```
+study_news(baseUrl?)            ── AIHOT 在线时优先：/api/v1/items → 精选/翻译现成
+        │ 连不上（ECONNREFUSED / HTTP 4xx·5xx / 非 JSON）
+        ▼
+study_feeds_refresh(sources|group) ── 27 个内置源，串行抓取（不并发打站点）
+        │  GET（浏览器 UA + 15s 超时）→ detectFormat → parseFeed
+        ▼
+FeedStore.upsertMany(items)     ── INSERT … ON CONFLICT(id) DO NOTHING
+        │  （重抓只更新正文，added 只算新 id；同文档重复 id 丢弃）
+        ▼
+学习档案/资讯.db（node:sqlite，表 feed_items + published/source 索引）
+        │
+        ▼
+study_feeds_search(query?, since?, sourceIds?, topics?, domainOnly?)
+        │  先 SQL 过滤（时间窗 / 源 / 主题 / 关键词 LIKE），再
+        ▼  rankByDomain(items, 资讯方向.json)：标题 +3、主题 +2、摘要 +1、命中排除词归零
+   [{title, url, source, publishedAt, domainScore, domainHits}]
+```
+
+四个刻意的设计：
+
+1. **没有 AIHOT 也能用。** `study_news` 只是「省一次 LLM 调用」的快路径；抓取、入库、检索、方向加权全部本地完成，不依赖 Docker、不依赖任何外部服务。
+2. **id 必须稳定。** 很多源不给 `guid`，如果拿「抓到的顺序」当 id，每次重抓都会重复入库。所以 `id = guid || link || FNV1a(源 id + 标题)`，同一篇永远同一个 id。
+3. **方向是文件，不是提示词片段。** `资讯方向.json` 让「按专业重写」变成一次写盘而不是每轮现编关键词；`domainOnly` 检索完全离线，可复现、可手改。
+4. **失败要如实说。** 单源失败只记在该源的 `error` 里（`HTTP 403` / 不是 RSS/Atom / 超时），不影响其他源，也不编造条目。
 
 ## 4. 存储
 
@@ -150,6 +182,8 @@ SRA 的 `esummary` 只返回一个 `expxml` 字符串（`<Study acc="SRP…"/><O
 |---|---|---|
 | 索引库 | `<profile 数据目录>/dsh-learning/scholar.db` | FTS5，可删可重建 |
 | 个人档案 | 用户工作区 `学习档案/个人档案.json`（+ `.md` 镜像、`初始化向导.html`） | 结构化，工具读写；用户也可手改 |
+| 资讯方向 | 用户工作区 `学习档案/资讯方向.json` | 主题/关键词/排除词/评分备注，模型写、用户可手改 |
+| 资讯库 | 用户工作区 `学习档案/资讯.db` | `node:sqlite` 一张 `feed_items` 表；可删可重建，删了重抓即恢复 |
 | 引导页草稿 | 浏览器 `localStorage: zhihang-profile-draft-v1` | 只在用户机器上，不上传 |
 | 资源画像 | 仓库 `data/carsi-resources.seed.json` + 用户可覆盖的本地副本 | 学校买的库因人而异 |
 | 缓存 | `os.tmpdir()/dsh-learning/` | 元数据缓存，带 TTL |
@@ -163,6 +197,8 @@ SRA 的 `esummary` 只返回一个 `expxml` 字符串（`<Study acc="SRP…"/><O
 | `node:sqlite`（含 FTS5） | Node 内置，零原生依赖，SQLite 3.53 自带 FTS5 | `better-sqlite3`：要为三平台编译 |
 | `unpdf@1.9.x` | pdfjs 的零依赖封装，支持 Node 22 | `unpdf@2`：要求 Node ≥24，与 CI 矩阵冲突；`pdf-parse`：维护弱 |
 | 手写 JSON Schema 工具定义 | `ToolSchema.parameters` 本就是 `Record<string, unknown>`，且不能 import `@deepseek-ai/*` | `defineTool`：需要从 app.asar 才能解析到 |
+| 手写 RSS/Atom 解析（正则切条） | 只需 `title/link/guid/pubDate/summary` 五个字段，RSS 2.0 与 Atom 两种格式几十行就够 | `fast-xml-parser`：为五个字段引一个解析器，还要处理命名空间；`feedparser`：多年未维护 |
+| 资讯检索用 `LIKE` 而不是 FTS5 | 资讯是「万级 + 强时间过滤」，`LIKE` 足够且零成本；FTS5 的中文二元组分词是 scholar 那种长文 PDF 场景的需要 | 复用 scholar 的 FTS5：多一套索引同步逻辑，收益不明显 |
 | 不引入 ORM | 数据模型简单 | Prisma：太重 |
 
 ## 6. 里程碑与验收标准
@@ -177,6 +213,7 @@ SRA 的 `esummary` 只返回一个 `expxml` 字符串（`<Study acc="SRP…"/><O
 | M4 | ① 测评生成 RIASEC 六维分数；② 生成的四年路线含每年技能时间线与目标；③ 导出 Word 可正常打开、无乱码 |
 | M5 | ① paper-radar 输出的 JSON 能被 AIHOT 作为 `json_list` 信源成功抓取；② bio-data 能按关键词返回 GEO 数据集元数据 | **已完成**：`dsh-radar export` 实测写出 `data.items`（含 `published_at` ISO 时间与 `urlTemplate: {raw:url}`）；`searchGeo({term:'single-cell lung cancer'})` 实测命中 10827 条、解析出 GSE349653（Homo sapiens，12 个样本）；14 个工具已装进 profile |
 | M6 | ① 陌生人照 README 从零装通（录屏验证）；② COMPLIANCE 逐条自查；③ v0.1.0 tag |
+| M8 | ① 全新工作区里 `study_feeds_refresh` 至少 3 个源成功入库、`study_feeds_search` 能按关键词命中；② `study_news_domain_save` 写盘后 `domainOnly` 检索的 `domainScore` 排序正确；③ `study_news` 在本机 AIHOT 在线时返回精选条目、离线时给出可执行的两条退路；④ `pnpm check` 全绿 | **已完成**：实测 27 源中 3/4 抽样源成功（PLOS/Nature Methods/Simon Willison 各 +5 条，bioRxiv 被 Cloudflare 拦并如实报错）；`study_news` 对本机 AIHOT 返回 3 条精选（含分数 77）；196 个测试全绿 |
 
 ## 7. 风险与对策
 
@@ -187,3 +224,5 @@ SRA 的 `esummary` 只返回一个 `expxml` 字符串（`<Study acc="SRP…"/><O
 | 商业数据库条款变化 | 我们本来就只做导航，条款变化只影响画像数据，不影响代码 |
 | 用户以为"能自动下全文" | README 与首次使用引导里明确写清边界 |
 | 中文学术 PDF 排版复杂（双栏、公式） | v1 只承诺「能找到那句话」，不承诺完美还原公式 |
+| 信源站点反爬（Cloudflare / UA 校验） | 逐源容错：失败只记该源 `error`，不中断整轮；README 明说哪些源可能拦，不假装成功 |
+| 用户以为「内置资讯」= 有全文 | 只做标题 + 摘要 + 原文链接；全文仍走 CARSI / 开放获取路由 |

@@ -3,6 +3,25 @@
 本项目的所有重要变更都记录在这里。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.3.0] - 2026-11-18
+
+知航开始自己盯外国信源：内置 27 个免费 RSS/Atom 源 + 可写的「资讯方向」口径 + 5 个新工具；有 AIHOT 实例就读它的精选，没有也能独立跑。新增字段让初始化多问一句「要不要开资讯雷达」。
+
+### 新增
+
+- **新包 `@dsh-learning/feeds`**（零运行时依赖）：`FEED_SOURCES` 27 个源 / 6 个分组（期刊、预印本、厂商官方、研究机构、媒体、社区），全部免费公开、无需学校订阅；自写 RSS/Atom 解析（RSS 2.0 + Atom，含 CDATA、命名实体、`rel=alternate` 链接选择），`FeedStore` 以 `node:sqlite` 落本地库（`INSERT … ON CONFLICT(id) DO NOTHING`，重复抓取只更新正文、不重复计数）；`refreshFeeds()` 串行抓取、逐源独立容错；`normalizeDomain()` / `rankByDomain()` 做方向加权（标题 +3、主题标签 +2、摘要 +1，命中排除词归零）。CLI：`dsh-feeds sources|refresh|search|stats`。
+- **资讯方向 `学习档案/资讯方向.json`**：`saveNewsDomain()` / `readNewsDomain()`，主题 ≤12、关键词与排除词 ≤40、单词 ≤40 字，大小写不敏感去重；这是「模型按专业重写提示词」的落点——改的是可读 JSON，不是代码。
+- **onboarding 从「身份档案」扩到「资讯口径」**：`GroupId` 增加 `'news'`，`FIELDS` 增加 `newsInterest`（必填，select）与 `newsTopics`，分组顺序为 identity → news → goal → preference → resource（25 个字段 / 5 组）；Markdown 镜像与引导页由同一份 schema 数据驱动，新组自动出现。
+- **5 个新工具**（18 → 23）：`study_news`（读本机 AIHOT `/api/v1/items`，`mode=selected|all`、`window=24h|7d`，连不上时明确给出「先起 AIHOT 或改用内置抓取」两条路）、`study_feeds_refresh`、`study_feeds_search`、`study_feeds_sources`、`study_news_domain_save`。
+- `ToolsConfig.aihotBaseUrl`（默认 `http://127.0.0.1:3000`，可用环境变量 `ZHIHANG_AIHOT_BASE` 覆盖）与 `ToolsConfig.feedsDbPath`（默认 `<工作区>/学习档案/资讯.db`）。
+- **知航 persona 增加「资讯雷达」职责与开场分支**：问到 `newsInterest` 时不许跳过；答「要」就追问方向并按专业重写口径，答「先不要」就记下不再推销；讲资讯的规矩是「一句价值 + 标题 + 原文链接 + 日期」，一次最多 3–5 条。
+
+### 修复
+
+- `refreshFeeds({ sources })` 同时接受源对象与源 id 时类型收窄失败（`FeedSource[]` 被当成 `string[]` 传进 `resolveSources`）→ 拆出 `pickSources()` 明确分支。
+- onboarding 测试把分组与「里程碑记录」小节序号写死（新增 news 组后变成「六、里程碑记录」）→ 改为按 `GROUPS` 与标题正则断言。
+- learning-tools 测试的离线 fetch 只认雷达与 GEO，新增资讯工具后会把真实网络请求打出去 → 补上 PLOS Atom 与 AIHOT items 两条假响应。
+
 ## [0.2.0] - 2026-11-18
 
 知航从「你说什么我做什么」变成「先弄清你是谁，再决定说什么」：结构化档案 + 资源体检 + 可视化引导页 + 写进 persona 的开场协议。

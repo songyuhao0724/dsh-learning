@@ -34,7 +34,7 @@
 
 ### 方式 B：只装工具，不要人格
 
-只装 `packages/learning-tools`，然后在任意预设里使用下面 18 个 `study_*` 工具。
+只装 `packages/learning-tools`，然后在任意预设里使用下面 23 个 `study_*` 工具。
 
 > 工具默认挂在 profile 顶层，所以**所有预设**都能看到它们。只想给「知航」用，
 > 就把 `packages/learning-tools/cordis.patch.yml` 里那一行搬进
@@ -45,7 +45,7 @@
 ## 2. 第一次使用：建档案 + 建索引
 
 「知航」开工前会先调 `study_profile_status` 读工作区的结构化档案
-`学习档案/个人档案.json`（23 个字段 / 4 组）。必填没齐时它**一次只问一个问题**，
+`学习档案/个人档案.json`（25 个字段 / 5 组）。必填没齐时它**一次只问一个问题**，
 答一条存一条；不会再一口气抛六个问题。
 
 ### 2.1 三种建档方式，任选
@@ -75,6 +75,23 @@
 然后对助手说「把我的 Zotero 建个索引」，它会调 `study_papers_index`。
 之后任何作业都能说「按我图书馆里的文献写，带页码引用」。
 
+### 2.3 资讯雷达（可选，不需要学校订阅）
+
+档案问完身份会顺带问一句「要不要开资讯雷达」。选「要」就再说一句方向（例如「单细胞、肿瘤免疫」），
+知航会按你的专业重写口径并写进 `学习档案/资讯方向.json`——主题、英文关键词、排除词都在里面，
+之后想改直接说「我的资讯方向改成 XX」或手改这个文件都行。
+
+两种数据源：
+
+| 场景 | 用什么 | 说明 |
+|---|---|---|
+| 本机跑着 AIHOT（`docker compose up -d`） | `study_news` | 直接读它筛过、翻成中文的条目（`mode=selected` 精选 / `all` 全部） |
+| 没有 AIHOT，或只想看原始信源 | `study_feeds_refresh` → `study_feeds_search` | 内置 27 个免费源入本地 `学习档案/资讯.db`，按关键词 / 时间窗 / 源 / 主题检索 |
+
+第一次用内置抓取时先 `study_feeds_refresh`（可只抓一组，如 `group: 期刊`），再 `study_feeds_search`。
+`study_feeds_sources` 能列出全部源 id。抓取失败的源会单独报错（常见是 Cloudflare 拦 bioRxiv），
+不影响其它源。
+
 ### 建议：把常用路径写进插件配置（省得每次传参）
 
 在 profile 的插件设置里给 `learning-tools` 填：
@@ -85,6 +102,8 @@ config:
   zoteroDataDir: C:/Users/<你>/Zotero
   indexDbPath: <你的工作区>/.dsh-learning/index.db
   contactEmail: <你的邮箱>   # 查 Unpaywall 需要，它要求表明身份
+  aihotBaseUrl: http://127.0.0.1:3000   # AIHOT 不在本机就改这里，或用环境变量 ZHIHANG_AIHOT_BASE
+  feedsDbPath: <你的工作区>/学习档案/资讯.db   # 默认就在工作区，一般不用填
 ```
 
 ---
@@ -114,6 +133,8 @@ config:
 - 「按医疗健康大数据方向给我一份四年计划」→ 应触发 `study_career_plan`
 - 「最近一周医学影像方面有什么新论文？」→ 应触发 `study_papers_radar`
 - 「GEO 里有没有单细胞肺癌的数据？」→ 应触发 `study_bio_data_search`
+- 「有什么新进展？」（AIHOT 在线时）→ 应触发 `study_news`；不在线则应由 `study_feeds_refresh` + `study_feeds_search` 接手
+- 「我的资讯方向改成单细胞和免疫」→ 应触发 `study_news_domain_save`，之后检索按新方向打分
 
 命令行的旁路验证（不经过 DSH）：
 
@@ -121,6 +142,8 @@ config:
 pnpm install && pnpm build
 node packages/scholar/dist/cli.js summary --db C:/Users/<你>/Zotero/zotero.sqlite --data C:/Users/<你>/Zotero
 node packages/paper-radar/dist/cli.js preview --days 3 --per-source 5
+node packages/feeds/dist/cli.js refresh --sources plos-compbiol,nature-methods --per-source 5
+node packages/feeds/dist/cli.js search --query crispr --limit 3
 ```
 
 > 热点雷达会同时抓 arXiv / bioRxiv / medRxiv（给了 `--query` 才查 PubMed）。
@@ -153,3 +176,7 @@ plugin_manager remove_bundle(target="@dsh-learning/preset-zhihang")
 | 档案改了但知航还用旧信息 | 档案在 `学习档案/个人档案.json`，工具每次重新读；旧信息来自会话上下文 | 开新会话，或让它重跑一次 `study_profile_status` |
 | 引导页填写后进度不动 | 页面用了 `localStorage` 草稿，被浏览器隐私模式禁用 | 换普通窗口打开；或直接手工编辑 json |
 | 引导页下载的 json 覆盖后字段没生效 | 覆盖到了别的目录（比如 `AI伴学助手/`） | 确认路径是 `<工作区>/学习档案/个人档案.json` |
+| `study_news` 报「连不上 AIHOT」 | 本机 AIHOT 容器没起，或端口不是 3000 | `docker compose up -d` 后重试；或不用它，改 `study_feeds_refresh` + `study_feeds_search` |
+| 某个源一直「返回的不是 RSS/Atom」 | 站点对爬虫 UA 返回 Cloudflare 挑战页（bioRxiv 常见） | 该源单独失败、不影响其它源；需要的话去掉它，别硬刚 |
+| `study_feeds_search` 命中 0 条 | 还没抓过，或时间窗太窄 | 先 `study_feeds_refresh`；放宽 `since` 或不传 |
+| `资讯.db` 打不开 / 库损坏 | 多进程同时写，或文件被杀毒软件锁住 | 删掉 `学习档案/资讯.db` 重新 `refresh`（这是缓存库，可重建） |

@@ -1,0 +1,29 @@
+{
+  "name": "@dsh-learning/feeds",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "外国免费信源雷达：RSS/Atom 抓取 → 本地 SQLite 累积 → 关键词检索，不依赖学校订阅",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "dsh-feeds": "./dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  }
+}

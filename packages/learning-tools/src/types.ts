@@ -47,6 +47,10 @@ export interface ToolsConfig {
   contactEmail?: string;
   /** 工作区目录：档案（学习档案/）默认读它；单次调用可用 workspaceDir 覆盖。 */
   workspaceDir?: string;
+  /** AIHOT 实例地址（`study_news` 用）；默认 http://127.0.0.1:3000。 */
+  aihotBaseUrl?: string;
+  /** 资讯累积库路径；默认 <workspace>/学习档案/资讯.db。 */
+  feedsDbPath?: string;
   /** 注入用：测试里换成假 fetch；生产环境由 apply() 兜底成 globalThis.fetch。 */
   fetch?: PluginFetch;
 }

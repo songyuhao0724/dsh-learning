@@ -10,18 +10,21 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { extractMilestones, renderProfileMarkdown } from './render.js';
 import { GROUPS, fieldByKey, fieldsOfGroup, questionFor, requiredFields } from './schema.js';
-import type { FieldValue, GroupStat, ProfileFile, ProfileStatus } from './types.js';
+import type { FieldValue, GroupStat, NewsDomainProfile, ProfileFile, ProfileStatus, SaveNewsDomainResult } from './types.js';
 
 export const PROFILE_DIR_NAME = '学习档案';
 export const PROFILE_JSON_NAME = '个人档案.json';
 export const PROFILE_MD_NAME = '个人档案.md';
 export const WIZARD_NAME = '初始化向导.html';
+/** 模型按专业拟出来的资讯方向，与个人档案分开存（可重新生成、可手改）。 */
+export const NEWS_DOMAIN_NAME = '资讯方向.json';
 
 export interface ProfilePaths {
   dir: string;
   json: string;
   markdown: string;
   wizard: string;
+  newsDomain: string;
 }
 
 export function profilePaths(workspaceDir: string): ProfilePaths {
@@ -31,6 +34,7 @@ export function profilePaths(workspaceDir: string): ProfilePaths {
     json: join(dir, PROFILE_JSON_NAME),
     markdown: join(dir, PROFILE_MD_NAME),
     wizard: join(dir, WIZARD_NAME),
+    newsDomain: join(dir, NEWS_DOMAIN_NAME),
   };
 }
 
@@ -176,6 +180,89 @@ export function saveProfile(
 }
 
 const CN_NUM = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
+
+/** 与 `@dsh-learning/feeds` 的 `normalizeDomain()` 保持同一口径：方向 ≤12、关键词 ≤40、单词 ≤40 字。 */
+const MAX_DOMAIN_TOPICS = 12;
+const MAX_DOMAIN_TERMS = 40;
+const MAX_TERM_LENGTH = 40;
+
+function cleanDomainTerms(values: unknown, limit: number): string[] {
+  if (!Array.isArray(values)) return [];
+  const out: string[] = [];
+  for (const value of values) {
+    if (typeof value !== 'string') continue;
+    const term = value.replace(/\s+/g, ' ').trim();
+    if (term === '' || term.length > MAX_TERM_LENGTH) continue;
+    if (out.some((existing) => existing.toLowerCase() === term.toLowerCase())) continue;
+    out.push(term);
+    if (out.length >= limit) break;
+  }
+  return out;
+}
+
+export interface ReadNewsDomainResult {
+  domain?: NewsDomainProfile;
+  file: string;
+  exists: boolean;
+  error?: string;
+}
+
+/** 读资讯方向；文件不存在或坏了都只是「还没有」，不抛错。 */
+export function readNewsDomain(workspaceDir: string): ReadNewsDomainResult {
+  const file = profilePaths(workspaceDir).newsDomain;
+  if (!existsSync(file)) return { file, exists: false };
+  try {
+    const raw = JSON.parse(readFileSync(file, 'utf8')) as Partial<NewsDomainProfile>;
+    const notes = typeof raw.scoringNotes === 'string' ? raw.scoringNotes.trim() : '';
+    const domain: NewsDomainProfile = {
+      version: 1,
+      updatedAt: typeof raw.updatedAt === 'string' ? raw.updatedAt : new Date().toISOString(),
+      topics: cleanDomainTerms(raw.topics, MAX_DOMAIN_TOPICS),
+      keywords: cleanDomainTerms(raw.keywords, MAX_DOMAIN_TERMS),
+      exclude: cleanDomainTerms(raw.exclude, MAX_DOMAIN_TERMS),
+    };
+    if (notes !== '') domain.scoringNotes = notes.slice(0, 500);
+    return { domain, file, exists: true };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return { file, exists: true, error: `资讯方向 JSON 解析失败：${message}` };
+  }
+}
+
+/**
+ * 写资讯方向。这是模型在初始化阶段「按专业重写提示词」的落点：
+ * 用户答完专业方向后，模型据此生成 topics/keywords/exclude，写进这里，
+ * 后续检索按它加权（见 `@dsh-learning/feeds` 的 `rankByDomain`）。
+ */
+export function saveNewsDomain(
+  workspaceDir: string,
+  input: { topics?: unknown; keywords?: unknown; exclude?: unknown; scoringNotes?: unknown },
+  options: { now?: string } = {},
+): SaveNewsDomainResult {
+  const paths = profilePaths(workspaceDir);
+  const now = options.now ?? new Date().toISOString();
+  const domain: NewsDomainProfile = {
+    version: 1,
+    updatedAt: now,
+    topics: cleanDomainTerms(input.topics, MAX_DOMAIN_TOPICS),
+    keywords: cleanDomainTerms(input.keywords, MAX_DOMAIN_TERMS),
+    exclude: cleanDomainTerms(input.exclude, MAX_DOMAIN_TERMS),
+  };
+  const notes = typeof input.scoringNotes === 'string' ? input.scoringNotes.trim() : '';
+  if (notes !== '') domain.scoringNotes = notes.slice(0, 500);
+
+  mkdirSync(paths.dir, { recursive: true });
+  writeFileSync(paths.newsDomain, `${JSON.stringify(domain, null, 2)}\n`, 'utf8');
+  return {
+    domain,
+    file: paths.newsDomain,
+    counts: {
+      topics: domain.topics.length,
+      keywords: domain.keywords.length,
+      exclude: domain.exclude.length,
+    },
+  };
+}
 
 /** 完整度诊断：知航开场就该拿这个，而不是从零开始问。 */
 export function profileStatus(profile: ProfileFile): ProfileStatus {

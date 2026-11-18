@@ -5,6 +5,8 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import {
   FIELDS,
+  GROUPS,
+  NEWS_DOMAIN_NAME,
   PROFILE_JSON_NAME,
   PROFILE_MD_NAME,
   checkResources,
@@ -17,10 +19,12 @@ import {
   profileStatus,
   profileSummaryLine,
   questionFor,
+  readNewsDomain,
   readProfile,
   renderProfileMarkdown,
   renderWizardHtml,
   requiredFields,
+  saveNewsDomain,
   saveProfile,
 } from '../src/index.js';
 
@@ -37,11 +41,11 @@ afterEach(() => {
 describe('字段目录', () => {
   it('每个字段都属于某个分组，key 不重复', () => {
     const seen = new Set<string>();
-    for (const group of ['identity', 'goal', 'preference', 'resource'] as const) {
-      const fields = fieldsOfGroup(group);
+    for (const { id } of GROUPS) {
+      const fields = fieldsOfGroup(id);
       expect(fields.length).toBeGreaterThan(0);
       for (const field of fields) {
-        expect(field.group).toBe(group);
+        expect(field.group).toBe(id);
         expect(seen.has(field.key)).toBe(false);
         seen.add(field.key);
       }
@@ -116,7 +120,7 @@ describe('档案读写', () => {
     // 在已有的「里程碑记录」小节里加一行（用户手写的），模拟真实编辑
     const current = readFileSync(mdPath, 'utf8');
     const edited = current.replace(
-      /(## 五、里程碑记录\n\n)/,
+      /(## [^\n]*里程碑记录\n\n)/,
       '$1- 2026-11-18 首次填档案\n',
     );
     expect(edited).toContain('2026-11-18 首次填档案');
@@ -242,5 +246,49 @@ describe('引导页', () => {
     });
     expect(html).toContain('资源体检');
     expect(html).toContain(report.items[0]!.label);
+  });
+});
+
+describe('资讯方向', () => {
+  it('没写过时 reads 到 exists=false 而不是抛错', () => {
+    const read = readNewsDomain(ws);
+    expect(read.exists).toBe(false);
+    expect(read.domain).toBeUndefined();
+    expect(read.file.endsWith(NEWS_DOMAIN_NAME)).toBe(true);
+  });
+
+  it('保存后能读回，词条去重并限量', () => {
+    const saved = saveNewsDomain(ws, {
+      topics: ['基因组学', '基因组学', ' 单细胞 ', ''],
+      keywords: ['CRISPR', 'crispr', 'scRNA-seq'],
+      exclude: ['招聘'],
+      scoringNotes: '偏好方法学论文',
+    });
+    expect(saved.counts.topics).toBe(2);
+    // 英文关键词大小写不敏感去重，只留第一次的写法
+    expect(saved.counts.keywords).toBe(2);
+    const read = readNewsDomain(ws);
+    expect(read.exists).toBe(true);
+    expect(read.domain?.topics).toEqual(['基因组学', '单细胞']);
+    expect(read.domain?.keywords).toEqual(['CRISPR', 'scRNA-seq']);
+    expect(read.domain?.scoringNotes).toBe('偏好方法学论文');
+    expect(readFileSync(saved.file, 'utf8')).toContain('scoringNotes');
+  });
+
+  it('资讯需求是必填项，会出现在开场问题里', () => {
+    const field = fieldByKey('newsInterest');
+    expect(field?.group).toBe('news');
+    expect(field?.required).toBe(true);
+    const profile = emptyProfile('2026-01-01T00:00:00.000Z');
+    profile.values.name = '宋宇昊';
+    const status = profileStatus(profile);
+    expect(status.missingRequired.map((field) => field.key)).toContain('newsInterest');
+    expect(status.ready).toBe(false);
+    // 身份四件套填完后，下一个该问的就是资讯需求（顺序：identity → news → goal）
+    profile.values.school = '康复大学';
+    profile.values.major = '生物信息学';
+    profile.values.grade = '2026 级';
+    const next = profileStatus(profile);
+    expect(next.nextQuestions[0]).toContain('资讯');
   });
 });

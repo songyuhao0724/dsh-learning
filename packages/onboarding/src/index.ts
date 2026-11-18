@@ -21,6 +21,8 @@ export type {
   ResourceStatus,
   ResourceCheckItem,
   ResourceCheckReport,
+  NewsDomainProfile,
+  SaveNewsDomainResult,
 } from './types.js';
 
 export { GROUPS, FIELDS, fieldByKey, fieldsOfGroup, requiredFields, questionFor } from './schema.js';
@@ -30,6 +32,7 @@ export {
   PROFILE_JSON_NAME,
   PROFILE_MD_NAME,
   WIZARD_NAME,
+  NEWS_DOMAIN_NAME,
   GROUP_NUMERALS,
   profilePaths,
   emptyProfile,
@@ -39,7 +42,10 @@ export {
   loadProfile,
   saveProfile,
   profileStatus,
+  readNewsDomain,
+  saveNewsDomain,
 } from './profile.js';
+export type { ReadNewsDomainResult } from './profile.js';
 
 export { profileSummaryLine, renderProfileMarkdown, extractMilestones } from './render.js';
 export type { RenderOptions } from './render.js';
